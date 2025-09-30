@@ -52,3 +52,25 @@ func resolveDate(in string) (time.Time, error) {
     return t, nil
 }
 
+// presence-aware flag types
+type stringFlag struct {
+    v   string
+    set bool
+}
+
+func (f *stringFlag) String() string { return f.v }
+func (f *stringFlag) Set(s string) error { f.v, f.set = s, true; return nil }
+
+type boolFlag struct {
+    v   bool
+    set bool
+}
+
+func (f *boolFlag) String() string { if f.v { return "true" } ; return "false" }
+func (f *boolFlag) Set(s string) error {
+    s = strings.ToLower(strings.TrimSpace(s))
+    if s == "1" || s == "t" || s == "true" || s == "y" || s == "yes" || s == "on" { f.v, f.set = true, true; return nil }
+    if s == "0" || s == "f" || s == "false" || s == "n" || s == "no" || s == "off" { f.v, f.set = false, true; return nil }
+    return fmt.Errorf("invalid bool: %q", s)
+}
+

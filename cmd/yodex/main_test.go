@@ -15,20 +15,21 @@ func TestUnknownSubcommand(t *testing.T) {
 }
 
 func TestScriptFlagParsing(t *testing.T) {
+    t.Setenv("OPENAI_API_KEY", "sk-test")
     if code := run([]string{"script", "--date=2025-09-30", "--log-level=debug"}); code != 0 {
         t.Fatalf("script returned non-zero: %d", code)
     }
 }
 
 func TestAudioFlagParsing(t *testing.T) {
+    t.Setenv("OPENAI_API_KEY", "sk-test")
     if code := run([]string{"audio", "--date=2025-09-30", "--voice=alloy"}); code != 0 {
         t.Fatalf("audio returned non-zero: %d", code)
     }
 }
 
 func TestPublishFlagParsing(t *testing.T) {
-    if code := run([]string{"publish", "--date=2025-09-30", "--bucket=b", "--prefix=yodex"}); code != 0 {
+    if code := run([]string{"publish", "--date=2025-09-30", "--bucket=b", "--prefix=yodex", "--region=us-east-1"}); code != 0 {
         t.Fatalf("publish returned non-zero: %d", code)
     }
 }
-

@@ -1,0 +1,43 @@
+# OS
+.DS_Store
+
+# Editors/IDEs
+.idea/
+.vscode/
+
+# Go build/test artifacts
+bin/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+
+# Local Go cache/temp (for hermetic runs)
+.gocache/
+.gotmp/
+
+# Generated outputs
+out/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+terraform.tfvars
+terraform.tfvars.json
+
+# Local config variants (keep example config.json tracked)
+config.local.json
+
