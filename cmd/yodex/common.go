@@ -67,10 +67,10 @@ type boolFlag struct {
 }
 
 func (f *boolFlag) String() string { if f.v { return "true" } ; return "false" }
+func (f *boolFlag) IsBoolFlag() bool { return true }
 func (f *boolFlag) Set(s string) error {
     s = strings.ToLower(strings.TrimSpace(s))
     if s == "1" || s == "t" || s == "true" || s == "y" || s == "yes" || s == "on" { f.v, f.set = true, true; return nil }
     if s == "0" || s == "f" || s == "false" || s == "n" || s == "no" || s == "off" { f.v, f.set = false, true; return nil }
     return fmt.Errorf("invalid bool: %q", s)
 }
-
