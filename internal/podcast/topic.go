@@ -26,7 +26,11 @@ func SelectTopic(ctx context.Context, cfg config.Config, ai TextGenerator) (stri
 	}
 
 	prompt := "Propose a single science topic for an advanced 7-year-old. " +
-		"Focus on science, nature, or biology. " +
+		"Examples of topics: animals, cultural celebrations, science, astronomy, history, geography, physics, chemistry, biology, or nature. " +
+		"The topic should be interesting and engaging for a 7-year-old. " +
+		"The topic should be safe and appropriate for a 7-year-old. " +
+		"You may focus on a specific animal, plant, planet, star, or some other specific thing to do a deep-dive, or you may focus on a general science topic. " +
+		"The topic should be accurate and up to date. " +
 		"Reply with a short title only."
 	text, err := ai.GenerateText(ctx, cfg.TextModel, topicSystemPrompt, prompt)
 	if err != nil {

@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestHelp(t *testing.T) {
 	if code := run([]string{"-h"}); code != 0 {
@@ -31,5 +34,16 @@ func TestAudioFlagParsing(t *testing.T) {
 func TestPublishFlagParsing(t *testing.T) {
 	if code := run([]string{"publish", "--date=2025-09-30", "--bucket=b", "--prefix=yodex", "--region=us-east-1"}); code != 0 {
 		t.Fatalf("publish returned non-zero: %d", code)
+	}
+}
+
+func TestTopicFlagParsing(t *testing.T) {
+	tmp := t.TempDir()
+	cfgPath := tmp + "/config.json"
+	if err := os.WriteFile(cfgPath, []byte(`{"topic":"Test Topic"}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	if code := run([]string{"topic", "--config", cfgPath}); code != 0 {
+		t.Fatalf("topic returned non-zero: %d", code)
 	}
 }

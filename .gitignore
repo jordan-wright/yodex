@@ -44,3 +44,6 @@ terraform.tfvars.json
 # Local config variants (keep example config.json tracked)
 config.local.json
 
+# Local planning/design docs (may be untracked locally)
+DESIGN.md
+TASK_PLAN.md

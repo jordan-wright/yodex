@@ -38,6 +38,12 @@ func run(args []string) int {
 			return 1
 		}
 		return 0
+	case "topic":
+		if err := cmdTopic(args[1:]); err != nil {
+			slog.Error("topic failed", "err", err)
+			return 1
+		}
+		return 0
 	case "all":
 		if err := cmdAll(args[1:]); err != nil {
 			slog.Error("all failed", "err", err)
@@ -64,6 +70,7 @@ Subcommands:
   script   Generate Markdown script for a date
   audio    Generate MP3 audio from a script file/date
   publish  Upload MP3 to S3 and print URL
+  topic    Print today's topic (or generate one)
   all      (optional) Run script -> audio -> publish
   version  Print version
 
