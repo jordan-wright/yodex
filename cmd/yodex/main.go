@@ -1,61 +1,61 @@
 package main
 
 import (
-    "fmt"
-    "log/slog"
-    "os"
+	"fmt"
+	"log/slog"
+	"os"
 )
 
 var version = "0.1.0"
 
 func main() {
-    os.Exit(run(os.Args[1:]))
+	os.Exit(run(os.Args[1:]))
 }
 
 func run(args []string) int {
-    if len(args) == 0 || args[0] == "-h" || args[0] == "--help" {
-        printUsage()
-        return 0
-    }
+	if len(args) == 0 || args[0] == "-h" || args[0] == "--help" {
+		printUsage()
+		return 0
+	}
 
-    sub := args[0]
-    switch sub {
-    case "script":
-        if err := cmdScript(args[1:]); err != nil {
-            slog.Error("script failed", "err", err)
-            return 1
-        }
-        return 0
-    case "audio":
-        if err := cmdAudio(args[1:]); err != nil {
-            slog.Error("audio failed", "err", err)
-            return 1
-        }
-        return 0
-    case "publish":
-        if err := cmdPublish(args[1:]); err != nil {
-            slog.Error("publish failed", "err", err)
-            return 1
-        }
-        return 0
-    case "all":
-        if err := cmdAll(args[1:]); err != nil {
-            slog.Error("all failed", "err", err)
-            return 1
-        }
-        return 0
-    case "version":
-        fmt.Println(version)
-        return 0
-    default:
-        fmt.Fprintf(os.Stderr, "unknown subcommand: %s\n\n", sub)
-        printUsage()
-        return 2
-    }
+	sub := args[0]
+	switch sub {
+	case "script":
+		if err := cmdScript(args[1:]); err != nil {
+			slog.Error("script failed", "err", err)
+			return 1
+		}
+		return 0
+	case "audio":
+		if err := cmdAudio(args[1:]); err != nil {
+			slog.Error("audio failed", "err", err)
+			return 1
+		}
+		return 0
+	case "publish":
+		if err := cmdPublish(args[1:]); err != nil {
+			slog.Error("publish failed", "err", err)
+			return 1
+		}
+		return 0
+	case "all":
+		if err := cmdAll(args[1:]); err != nil {
+			slog.Error("all failed", "err", err)
+			return 1
+		}
+		return 0
+	case "version":
+		fmt.Println(version)
+		return 0
+	default:
+		fmt.Fprintf(os.Stderr, "unknown subcommand: %s\n\n", sub)
+		printUsage()
+		return 2
+	}
 }
 
 func printUsage() {
-    fmt.Fprintf(os.Stderr, `yodex %s
+	fmt.Fprintf(os.Stderr, `yodex %s
 
 Usage:
   yodex <subcommand> [flags]
