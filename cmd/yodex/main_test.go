@@ -18,8 +18,28 @@ func TestUnknownSubcommand(t *testing.T) {
 }
 
 func TestScriptFlagParsing(t *testing.T) {
+	origClient := newTextClient
+	t.Cleanup(func() { newTextClient = origClient })
+
+	fake := &fakeTextClient{
+		responses: []string{makeEpisodeJSON(800)},
+	}
+	newTextClient = func(apiKey string) (scriptClient, error) {
+		return fake, nil
+	}
+
+	origWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	tmp := t.TempDir()
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origWD) })
+
 	t.Setenv("OPENAI_API_KEY", "sk-test")
-	if code := run([]string{"script", "--date=2025-09-30", "--log-level=debug"}); code != 0 {
+	if code := run([]string{"script", "--date=2025-09-30", "--log-level=debug", "--topic=Test Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
 }

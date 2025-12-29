@@ -13,10 +13,11 @@ func TestBuildScriptPrompts(t *testing.T) {
 	if system == "" || user == "" {
 		t.Fatalf("expected non-empty prompts")
 	}
-	for _, section := range RequiredSections() {
-		if !strings.Contains(user, section) && !strings.Contains(system, section) {
-			t.Fatalf("missing section mention in prompts: %s", section)
-		}
+	if !strings.Contains(user, "JSON") {
+		t.Fatalf("expected JSON instruction in user prompt")
+	}
+	if !strings.Contains(user, "title") || !strings.Contains(user, "intro") {
+		t.Fatalf("expected field names in user prompt")
 	}
 }
 

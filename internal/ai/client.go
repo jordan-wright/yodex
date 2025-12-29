@@ -9,6 +9,7 @@ import (
 	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/packages/param"
 	"github.com/openai/openai-go/v3/responses"
+	"github.com/openai/openai-go/v3/shared/constant"
 )
 
 // Client wraps the official OpenAI SDK client and exposes minimal helpers used by the app.
@@ -42,6 +43,30 @@ func (c *Client) GenerateText(ctx context.Context, model, system, prompt string)
 		Model:        model,
 		Instructions: param.NewOpt(system),
 		Input:        responses.ResponseNewParamsInputUnion{OfString: param.NewOpt(prompt)},
+	}
+	res, err := c.sdk.Responses.New(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	return res.OutputText(), nil
+}
+
+// GenerateJSON calls the Responses API with a JSON schema format and returns raw JSON text.
+func (c *Client) GenerateJSON(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, error) {
+	jsonSchema := responses.ResponseFormatTextJSONSchemaConfigParam{
+		Name:        schemaName,
+		Schema:      schema,
+		Strict:      param.NewOpt(true),
+		Description: param.NewOpt("Structured episode script data"),
+		Type:        constant.JSONSchema("json_schema"),
+	}
+	req := responses.ResponseNewParams{
+		Model:        model,
+		Instructions: param.NewOpt(system),
+		Input:        responses.ResponseNewParamsInputUnion{OfString: param.NewOpt(prompt)},
+		Text: responses.ResponseTextConfigParam{
+			Format: responses.ResponseFormatTextConfigUnionParam{OfJSONSchema: &jsonSchema},
+		},
 	}
 	res, err := c.sdk.Responses.New(ctx, req)
 	if err != nil {

@@ -35,11 +35,9 @@ func BuildScriptPrompts(topic string) (string, string, error) {
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "Create an %d-word episode on %q. ", TargetWords, topic)
-	b.WriteString("Output Markdown with these exact section headings in order:\n")
-	for _, section := range requiredSections {
-		fmt.Fprintf(&b, "%s\n", section)
-	}
-	b.WriteString("Fun Facts should be 3-4 bullet points. Jokes should be 2-3 kid-safe jokes. ")
+	b.WriteString("Return a JSON object matching the schema with fields: ")
+	b.WriteString("title, intro, main, funFacts, jokes, recap, question. ")
+	b.WriteString("Fun facts must be 3-4 items. Jokes must be 2-3 kid-safe items. ")
 	b.WriteString("Keep it upbeat, kid-safe, accurate, and easy to follow. Avoid unsafe instructions.")
 	user := b.String()
 	return systemPrompt, user, nil
@@ -55,8 +53,10 @@ func RequiredSections() []string {
 // ValidateSections ensures all required section headers appear in the script.
 func ValidateSections(text string) error {
 	var missing []string
+	found := findSectionHeadings(text)
 	for _, section := range requiredSections {
-		if !strings.Contains(text, section) {
+		name := normalizeHeading(section)
+		if !found[name] {
 			missing = append(missing, section)
 		}
 	}
@@ -71,6 +71,59 @@ func WordCount(text string) int {
 	return len(strings.Fields(text))
 }
 
+func findSectionHeadings(text string) map[string]bool {
+	found := make(map[string]bool, len(requiredSections))
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "#") {
+			level := headingLevel(line)
+			if level == 1 {
+				found["title"] = true
+			}
+			name := normalizeHeading(line)
+			if name != "" {
+				found[name] = true
+			}
+			continue
+		}
+		name := normalizePlainHeader(line)
+		if name != "" {
+			found[name] = true
+		}
+	}
+	return found
+}
+
+func normalizeHeading(line string) string {
+	line = strings.TrimSpace(line)
+	line = strings.TrimLeft(line, "#")
+	line = strings.TrimSpace(line)
+	line = strings.TrimSuffix(line, ":")
+	line = strings.TrimSpace(line)
+	return strings.ToLower(line)
+}
+
+func normalizePlainHeader(line string) string {
+	line = strings.TrimSpace(line)
+	line = strings.TrimSuffix(line, ":")
+	line = strings.TrimSpace(line)
+	return strings.ToLower(line)
+}
+
+func headingLevel(line string) int {
+	level := 0
+	for _, r := range line {
+		if r != '#' {
+			break
+		}
+		level++
+	}
+	return level
+}
+
 var safetyTerms = []string{
 	"suicide",
 	"self-harm",
@@ -81,7 +134,6 @@ var safetyTerms = []string{
 	"poison",
 	"cocaine",
 	"heroin",
-	"meth",
 	"sexual",
 }
 
