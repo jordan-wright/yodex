@@ -43,6 +43,7 @@ func Default() Config {
 	return Config{
 		Voice:     "alloy",
 		S3Prefix:  "yodex",
+		Region:    "us-west-2",
 		TextModel: "gpt-4o-mini",
 		TTSModel:  "gpt-4o-mini-tts",
 	}
