@@ -1,13 +1,25 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
+	"io"
 	"log/slog"
 	"os"
 
+	"yodex/internal/ai"
 	cfgpkg "yodex/internal/config"
+	"yodex/internal/paths"
 )
+
+type ttsClient interface {
+	TTS(ctx context.Context, model, voice, text string, w io.Writer) error
+}
+
+var newTTSClient = func(apiKey string) (ttsClient, error) {
+	return ai.New(apiKey, "")
+}
 
 // yodex audio
 func cmdAudio(args []string) error {
@@ -43,7 +55,40 @@ func cmdAudio(args []string) error {
 	if err := cfgpkg.ValidateForAudio(cfg); err != nil {
 		return err
 	}
-	slog.Info("audio (stub)", "date", date.Format("2006-01-02"), "voice", cfg.Voice, "ttsModel", cfg.TTSModel)
-	// Implementation added in later tasks.
+
+	client, err := newTTSClient(cfg.OpenAIAPIKey)
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+
+	builder := paths.New("")
+	mdPath := builder.EpisodeMarkdown(date)
+	mp3Path := builder.EpisodeMP3(date)
+	if err := paths.CheckOverwrite([]string{mp3Path}, cfg.Overwrite); err != nil {
+		return err
+	}
+
+	script, err := os.ReadFile(mdPath)
+	if err != nil {
+		return err
+	}
+	if err := builder.EnsureOutDir(date); err != nil {
+		return err
+	}
+	out, err := os.Create(mp3Path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := out.Close(); cerr != nil {
+			slog.Warn("failed to close mp3 output", "err", cerr)
+		}
+	}()
+	if err := client.TTS(ctx, cfg.TTSModel, cfg.Voice, string(script), out); err != nil {
+		return err
+	}
+
+	slog.Info("audio generated", "date", date.Format("2006-01-02"), "voice", cfg.Voice, "ttsModel", cfg.TTSModel, "path", mp3Path)
 	return nil
 }
