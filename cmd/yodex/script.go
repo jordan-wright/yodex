@@ -87,14 +87,18 @@ func cmdScript(args []string) error {
 	}
 	ctx := context.Background()
 
+	slog.Info("script start", "date", date.Format("2006-01-02"), "model", cfg.TextModel)
+	slog.Info("selecting topic")
 	topicText, topicUsage, err := podcast.SelectTopicWithUsage(ctx, cfg, client)
 	if err != nil {
 		return err
 	}
+	slog.Info("topic selected", "topic", topicText)
 	system, user, err := podcast.BuildScriptPrompts(topicText)
 	if err != nil {
 		return err
 	}
+	slog.Info("prompts built")
 
 	episode, wordCount, rawJSON, usage, err := generateEpisode(ctx, client, cfg.TextModel, system, user)
 	if err != nil {
@@ -150,37 +154,46 @@ func cmdScript(args []string) error {
 
 func generateEpisode(ctx context.Context, client scriptClient, model, system, user string) (podcast.Episode, int, string, ai.TokenUsage, error) {
 	schema := podcast.EpisodeSchema()
+	slog.Info("generating episode json")
 	rawJSON, usage, err := client.GenerateJSONWithUsage(ctx, model, system, user, "episode_script", schema)
 	if err != nil {
 		return podcast.Episode{}, 0, rawJSON, ai.TokenUsage{}, err
 	}
+	slog.Info("parsing episode json")
 	episode, err := podcast.ParseEpisodeJSON(rawJSON)
 	if err != nil {
 		return podcast.Episode{}, 0, rawJSON, usage, err
 	}
+	slog.Info("validating episode fields")
 	if err := episode.Validate(); err != nil {
 		return podcast.Episode{}, 0, rawJSON, usage, err
 	}
+	slog.Info("rendering markdown")
 	markdown := episode.RenderMarkdown()
 	wordCount := podcast.WordCount(markdown)
 	if wordCount < retryMinWords {
 		const correctionNote = "Tighten to about 800 words (±100) while keeping all fields complete."
 		systemRetry := system + " " + correctionNote
+		slog.Info("retrying episode json for length", "wordCount", wordCount)
 		rawJSON, retryUsage, err := client.GenerateJSONWithUsage(ctx, model, systemRetry, user, "episode_script", schema)
 		if err != nil {
 			return podcast.Episode{}, 0, rawJSON, usage, err
 		}
 		usage = usage.Add(retryUsage)
+		slog.Info("parsing retry episode json")
 		episode, err = podcast.ParseEpisodeJSON(rawJSON)
 		if err != nil {
 			return podcast.Episode{}, 0, rawJSON, usage, err
 		}
+		slog.Info("validating retry episode fields")
 		if err := episode.Validate(); err != nil {
 			return podcast.Episode{}, 0, rawJSON, usage, err
 		}
+		slog.Info("rendering retry markdown")
 		markdown = episode.RenderMarkdown()
 		wordCount = podcast.WordCount(markdown)
 	}
+	slog.Info("running safety check", "wordCount", wordCount)
 	if err := podcast.BasicSafetyCheck(markdown); err != nil {
 		return podcast.Episode{}, 0, rawJSON, usage, err
 	}
