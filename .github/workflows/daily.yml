@@ -1,0 +1,101 @@
+name: Daily Yodex
+
+on:
+  schedule:
+    - cron: "0 12 * * *" # 12:00 UTC daily
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "UTC date (YYYY-MM-DD)"
+        required: false
+        type: string
+      debug:
+        description: "Upload intermediate artifacts"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: yodex-daily
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set date
+        id: date
+        run: |
+          if [ -n "${{ inputs.date }}" ]; then
+            DATE_VAL="${{ inputs.date }}"
+          else
+            DATE_VAL="$(date -u +%F)"
+          fi
+          echo "value=${DATE_VAL}" >> "$GITHUB_OUTPUT"
+          echo "path=$(date -u -d "${DATE_VAL}" +%Y/%m/%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate script
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          go run ./cmd/yodex script --date=${{ steps.date.outputs.value }}
+
+      - name: Upload script artifacts
+        if: ${{ inputs.debug }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: script-${{ steps.date.outputs.value }}
+          path: |
+            out/${{ steps.date.outputs.path }}/episode.md
+            out/${{ steps.date.outputs.path }}/meta.json
+            out/${{ steps.date.outputs.path }}/episode.raw.json
+          if-no-files-found: warn
+
+      - name: Generate audio
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          go run ./cmd/yodex audio --date=${{ steps.date.outputs.value }}
+
+      - name: Upload audio artifact
+        if: ${{ inputs.debug }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-${{ steps.date.outputs.value }}
+          path: out/${{ steps.date.outputs.path }}/episode.mp3
+          if-no-files-found: warn
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-west-2' }}
+
+      - name: Publish to S3
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_S3_PREFIX: ${{ secrets.AWS_S3_PREFIX }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          go run ./cmd/yodex publish --date=${{ steps.date.outputs.value }} --include-script
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "## Yodex Daily" >> $GITHUB_STEP_SUMMARY
+          echo "- Date: ${{ steps.date.outputs.value }}" >> $GITHUB_STEP_SUMMARY
+          if [ -f out/${{ steps.date.outputs.path }}/meta.json ]; then
+            echo "- Meta: $(cat out/${{ steps.date.outputs.path }}/meta.json)" >> $GITHUB_STEP_SUMMARY
+          fi
