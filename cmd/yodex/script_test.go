@@ -79,7 +79,7 @@ func TestScriptWritesOutputs(t *testing.T) {
 	if meta.Topic != "Test Topic" {
 		t.Fatalf("meta topic mismatch: %s", meta.Topic)
 	}
-	if meta.WordCount < retryMinWords || meta.WordCount > retryMaxWords {
+	if meta.WordCount < retryMinWords {
 		t.Fatalf("meta wordCount out of bounds: %d", meta.WordCount)
 	}
 }

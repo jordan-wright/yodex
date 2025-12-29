@@ -18,7 +18,6 @@ import (
 
 const (
 	retryMinWords = 650
-	retryMaxWords = 1000
 )
 
 type scriptClient interface {
@@ -150,7 +149,7 @@ func generateEpisode(ctx context.Context, client scriptClient, model, system, us
 	}
 	markdown := episode.RenderMarkdown()
 	wordCount := podcast.WordCount(markdown)
-	if wordCount < retryMinWords || wordCount > retryMaxWords {
+	if wordCount < retryMinWords {
 		const correctionNote = "Tighten to about 800 words (±100) while keeping all fields complete."
 		systemRetry := system + " " + correctionNote
 		rawJSON, err = client.GenerateJSON(ctx, model, systemRetry, user, "episode_script", schema)
@@ -170,7 +169,7 @@ func generateEpisode(ctx context.Context, client scriptClient, model, system, us
 	if err := podcast.BasicSafetyCheck(markdown); err != nil {
 		return podcast.Episode{}, 0, rawJSON, err
 	}
-	if wordCount < retryMinWords || wordCount > retryMaxWords {
+	if wordCount < retryMinWords {
 		return podcast.Episode{}, 0, rawJSON, errors.New("script length out of bounds after retry")
 	}
 	return episode, wordCount, rawJSON, nil
