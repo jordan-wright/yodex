@@ -36,42 +36,38 @@ resource "aws_s3_bucket_public_access_block" "episodes" {
   restrict_public_buckets = false
 }
 
+data "aws_iam_policy_document" "episodes_public" {
+  statement {
+    sid     = "PublicReadEpisodes"
+    effect  = "Allow"
+    actions = ["s3:GetObject"]
+    resources = [
+      "${aws_s3_bucket.episodes.arn}/${local.full_prefix}/latest/*"
+    ]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
+}
+
 # Public read only for the latest episode objects.
 resource "aws_s3_bucket_policy" "episodes_public" {
   bucket = aws_s3_bucket.episodes.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "PublicReadEpisodes"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = ["s3:GetObject"]
-        Resource = [
-          "${aws_s3_bucket.episodes.arn}/${local.full_prefix}/latest/*"
-        ]
-      }
-    ]
-  })
+  policy = data.aws_iam_policy_document.episodes_public.json
 
   depends_on = [aws_s3_bucket_public_access_block.episodes]
 }
 
-# GitHub OIDC provider for Actions.
+# GitHub OIDC provider for Actions (thumbprint is now ignored by AWS for GitHub OIDC).
 resource "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 
   client_id_list = ["sts.amazonaws.com"]
-  thumbprint_list = [
-    data.tls_certificate.github.certificates[0].sha1_fingerprint
-  ]
 }
 
 # Read the GitHub Actions OIDC cert chain for the thumbprint.
-data "tls_certificate" "github" {
-  url = "https://token.actions.githubusercontent.com"
-}
 
 # IAM role assumed by GitHub Actions via OIDC.
 resource "aws_iam_role" "github_actions" {
@@ -99,27 +95,30 @@ resource "aws_iam_role" "github_actions" {
   })
 }
 
+data "aws_iam_policy_document" "s3_publish" {
+  statement {
+    sid     = "ListBucket"
+    effect  = "Allow"
+    actions = ["s3:ListBucket"]
+    resources = [
+      aws_s3_bucket.episodes.arn
+    ]
+  }
+
+  statement {
+    sid     = "PutGetObjects"
+    effect  = "Allow"
+    actions = ["s3:PutObject", "s3:GetObject"]
+    resources = [
+      "${aws_s3_bucket.episodes.arn}/*"
+    ]
+  }
+}
+
 # S3 permissions for the publish step.
 resource "aws_iam_policy" "s3_publish" {
-  name = "yodex-s3-publish"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid      = "ListBucket"
-        Effect   = "Allow"
-        Action   = ["s3:ListBucket"]
-        Resource = aws_s3_bucket.episodes.arn
-      },
-      {
-        Sid      = "PutGetObjects"
-        Effect   = "Allow"
-        Action   = ["s3:PutObject", "s3:GetObject"]
-        Resource = "${aws_s3_bucket.episodes.arn}/*"
-      }
-    ]
-  })
+  name   = "yodex-s3-publish"
+  policy = data.aws_iam_policy_document.s3_publish.json
 }
 
 resource "aws_iam_role_policy_attachment" "s3_publish" {
