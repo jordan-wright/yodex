@@ -8,6 +8,7 @@ locals {
   full_prefix = trim(var.s3_prefix, "/")
 }
 
+# Bucket to store daily episodes and latest pointers.
 resource "aws_s3_bucket" "episodes" {
   bucket = var.bucket_name
 
@@ -16,6 +17,7 @@ resource "aws_s3_bucket" "episodes" {
   }
 }
 
+# Keep older versions when overwriting latest objects.
 resource "aws_s3_bucket_versioning" "episodes" {
   bucket = aws_s3_bucket.episodes.id
 
@@ -24,6 +26,7 @@ resource "aws_s3_bucket_versioning" "episodes" {
   }
 }
 
+# Allow public object reads only via the bucket policy below.
 resource "aws_s3_bucket_public_access_block" "episodes" {
   bucket = aws_s3_bucket.episodes.id
 
@@ -33,6 +36,7 @@ resource "aws_s3_bucket_public_access_block" "episodes" {
   restrict_public_buckets = false
 }
 
+# Public read only for the latest episode objects.
 resource "aws_s3_bucket_policy" "episodes_public" {
   bucket = aws_s3_bucket.episodes.id
 
@@ -45,7 +49,7 @@ resource "aws_s3_bucket_policy" "episodes_public" {
         Principal = "*"
         Action    = ["s3:GetObject"]
         Resource = [
-          "${aws_s3_bucket.episodes.arn}/${local.full_prefix}/*"
+          "${aws_s3_bucket.episodes.arn}/${local.full_prefix}/latest/*"
         ]
       }
     ]
@@ -54,7 +58,7 @@ resource "aws_s3_bucket_policy" "episodes_public" {
   depends_on = [aws_s3_bucket_public_access_block.episodes]
 }
 
-# GitHub OIDC provider
+# GitHub OIDC provider for Actions.
 resource "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 
@@ -69,6 +73,7 @@ data "tls_certificate" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
 
+# IAM role assumed by GitHub Actions via OIDC.
 resource "aws_iam_role" "github_actions" {
   name = "yodex-github-actions"
 
@@ -94,6 +99,7 @@ resource "aws_iam_role" "github_actions" {
   })
 }
 
+# S3 permissions for the publish step.
 resource "aws_iam_policy" "s3_publish" {
   name = "yodex-s3-publish"
 
@@ -105,17 +111,12 @@ resource "aws_iam_policy" "s3_publish" {
         Effect   = "Allow"
         Action   = ["s3:ListBucket"]
         Resource = aws_s3_bucket.episodes.arn
-        Condition = {
-          StringLike = {
-            "s3:prefix" = ["${local.full_prefix}/*"]
-          }
-        }
       },
       {
         Sid      = "PutGetObjects"
         Effect   = "Allow"
         Action   = ["s3:PutObject", "s3:GetObject"]
-        Resource = "${aws_s3_bucket.episodes.arn}/${local.full_prefix}/*"
+        Resource = "${aws_s3_bucket.episodes.arn}/*"
       }
     ]
   })
