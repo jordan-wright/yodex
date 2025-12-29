@@ -23,6 +23,8 @@ const (
 type scriptClient interface {
 	GenerateText(ctx context.Context, model, system, prompt string) (string, error)
 	GenerateJSON(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, error)
+	GenerateTextWithUsage(ctx context.Context, model, system, prompt string) (string, ai.TokenUsage, error)
+	GenerateJSONWithUsage(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, ai.TokenUsage, error)
 }
 
 var newTextClient = func(apiKey string) (scriptClient, error) {
@@ -85,7 +87,7 @@ func cmdScript(args []string) error {
 	}
 	ctx := context.Background()
 
-	topicText, err := podcast.SelectTopic(ctx, cfg, client)
+	topicText, topicUsage, err := podcast.SelectTopicWithUsage(ctx, cfg, client)
 	if err != nil {
 		return err
 	}
@@ -94,11 +96,12 @@ func cmdScript(args []string) error {
 		return err
 	}
 
-	episode, wordCount, rawJSON, err := generateEpisode(ctx, client, cfg.TextModel, system, user)
+	episode, wordCount, rawJSON, usage, err := generateEpisode(ctx, client, cfg.TextModel, system, user)
 	if err != nil {
 		writeRawJSON(date, rawJSON, cfg.Overwrite)
 		return err
 	}
+	usage = usage.Add(topicUsage)
 
 	builder := paths.New("")
 	if err := builder.EnsureOutDir(date); err != nil {
@@ -130,49 +133,61 @@ func cmdScript(args []string) error {
 		return err
 	}
 
-	slog.Info("script generated", "date", meta.Date, "topic", meta.Topic, "wordCount", meta.WordCount, "model", meta.Model)
+	slog.Info(
+		"script generated",
+		"date", meta.Date,
+		"topic", meta.Topic,
+		"wordCount", meta.WordCount,
+		"model", meta.Model,
+		"inputTokens", usage.InputTokens,
+		"outputTokens", usage.OutputTokens,
+		"totalTokens", usage.TotalTokens,
+		"cachedTokens", usage.CachedTokens,
+		"reasoningTokens", usage.ReasoningTokens,
+	)
 	return nil
 }
 
-func generateEpisode(ctx context.Context, client scriptClient, model, system, user string) (podcast.Episode, int, string, error) {
+func generateEpisode(ctx context.Context, client scriptClient, model, system, user string) (podcast.Episode, int, string, ai.TokenUsage, error) {
 	schema := podcast.EpisodeSchema()
-	rawJSON, err := client.GenerateJSON(ctx, model, system, user, "episode_script", schema)
+	rawJSON, usage, err := client.GenerateJSONWithUsage(ctx, model, system, user, "episode_script", schema)
 	if err != nil {
-		return podcast.Episode{}, 0, rawJSON, err
+		return podcast.Episode{}, 0, rawJSON, ai.TokenUsage{}, err
 	}
 	episode, err := podcast.ParseEpisodeJSON(rawJSON)
 	if err != nil {
-		return podcast.Episode{}, 0, rawJSON, err
+		return podcast.Episode{}, 0, rawJSON, usage, err
 	}
 	if err := episode.Validate(); err != nil {
-		return podcast.Episode{}, 0, rawJSON, err
+		return podcast.Episode{}, 0, rawJSON, usage, err
 	}
 	markdown := episode.RenderMarkdown()
 	wordCount := podcast.WordCount(markdown)
 	if wordCount < retryMinWords {
 		const correctionNote = "Tighten to about 800 words (±100) while keeping all fields complete."
 		systemRetry := system + " " + correctionNote
-		rawJSON, err = client.GenerateJSON(ctx, model, systemRetry, user, "episode_script", schema)
+		rawJSON, retryUsage, err := client.GenerateJSONWithUsage(ctx, model, systemRetry, user, "episode_script", schema)
 		if err != nil {
-			return podcast.Episode{}, 0, rawJSON, err
+			return podcast.Episode{}, 0, rawJSON, usage, err
 		}
+		usage = usage.Add(retryUsage)
 		episode, err = podcast.ParseEpisodeJSON(rawJSON)
 		if err != nil {
-			return podcast.Episode{}, 0, rawJSON, err
+			return podcast.Episode{}, 0, rawJSON, usage, err
 		}
 		if err := episode.Validate(); err != nil {
-			return podcast.Episode{}, 0, rawJSON, err
+			return podcast.Episode{}, 0, rawJSON, usage, err
 		}
 		markdown = episode.RenderMarkdown()
 		wordCount = podcast.WordCount(markdown)
 	}
 	if err := podcast.BasicSafetyCheck(markdown); err != nil {
-		return podcast.Episode{}, 0, rawJSON, err
+		return podcast.Episode{}, 0, rawJSON, usage, err
 	}
 	if wordCount < retryMinWords {
-		return podcast.Episode{}, 0, rawJSON, errors.New("script length out of bounds after retry")
+		return podcast.Episode{}, 0, rawJSON, usage, errors.New("script length out of bounds after retry")
 	}
-	return episode, wordCount, rawJSON, nil
+	return episode, wordCount, rawJSON, usage, nil
 }
 
 func writeRawJSON(date time.Time, raw string, overwrite bool) {

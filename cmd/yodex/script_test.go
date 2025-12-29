@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"yodex/internal/ai"
 	"yodex/internal/paths"
 	"yodex/internal/podcast"
 )
@@ -29,6 +30,16 @@ func (f *fakeTextClient) GenerateText(ctx context.Context, model, system, prompt
 
 func (f *fakeTextClient) GenerateJSON(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, error) {
 	return f.GenerateText(ctx, model, system, prompt)
+}
+
+func (f *fakeTextClient) GenerateTextWithUsage(ctx context.Context, model, system, prompt string) (string, ai.TokenUsage, error) {
+	text, err := f.GenerateText(ctx, model, system, prompt)
+	return text, ai.TokenUsage{}, err
+}
+
+func (f *fakeTextClient) GenerateJSONWithUsage(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, ai.TokenUsage, error) {
+	text, err := f.GenerateText(ctx, model, system, prompt)
+	return text, ai.TokenUsage{}, err
 }
 
 func TestScriptWritesOutputs(t *testing.T) {

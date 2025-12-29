@@ -39,6 +39,12 @@ func (c *Client) BaseURL() string { return c.baseURL }
 // GenerateText calls the Responses API and returns concatenated output text.
 // The system prompt is supplied via the "instructions" field.
 func (c *Client) GenerateText(ctx context.Context, model, system, prompt string) (string, error) {
+	text, _, err := c.GenerateTextWithUsage(ctx, model, system, prompt)
+	return text, err
+}
+
+// GenerateTextWithUsage calls the Responses API and returns text and usage.
+func (c *Client) GenerateTextWithUsage(ctx context.Context, model, system, prompt string) (string, TokenUsage, error) {
 	req := responses.ResponseNewParams{
 		Model:        model,
 		Instructions: param.NewOpt(system),
@@ -46,13 +52,19 @@ func (c *Client) GenerateText(ctx context.Context, model, system, prompt string)
 	}
 	res, err := c.sdk.Responses.New(ctx, req)
 	if err != nil {
-		return "", err
+		return "", TokenUsage{}, err
 	}
-	return res.OutputText(), nil
+	return res.OutputText(), usageFromResponse(res.Usage), nil
 }
 
 // GenerateJSON calls the Responses API with a JSON schema format and returns raw JSON text.
 func (c *Client) GenerateJSON(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, error) {
+	text, _, err := c.GenerateJSONWithUsage(ctx, model, system, prompt, schemaName, schema)
+	return text, err
+}
+
+// GenerateJSONWithUsage calls the Responses API with a JSON schema format and returns raw JSON text and usage.
+func (c *Client) GenerateJSONWithUsage(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, TokenUsage, error) {
 	jsonSchema := responses.ResponseFormatTextJSONSchemaConfigParam{
 		Name:        schemaName,
 		Schema:      schema,
@@ -70,9 +82,9 @@ func (c *Client) GenerateJSON(ctx context.Context, model, system, prompt, schema
 	}
 	res, err := c.sdk.Responses.New(ctx, req)
 	if err != nil {
-		return "", err
+		return "", TokenUsage{}, err
 	}
-	return res.OutputText(), nil
+	return res.OutputText(), usageFromResponse(res.Usage), nil
 }
 
 // TTS writes MP3 audio to the provided writer using the Audio Speech API.
