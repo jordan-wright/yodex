@@ -20,6 +20,8 @@ const (
 	retryMinWords = 650
 )
 
+const scriptCallTimeout = 3 * time.Minute
+
 type scriptClient interface {
 	GenerateText(ctx context.Context, model, system, prompt string) (string, error)
 	GenerateJSON(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, error)
@@ -155,10 +157,15 @@ func cmdScript(args []string) error {
 func generateEpisode(ctx context.Context, client scriptClient, model, system, user string) (podcast.Episode, int, string, ai.TokenUsage, error) {
 	schema := podcast.EpisodeSchema()
 	slog.Info("generating episode json")
-	rawJSON, usage, err := client.GenerateJSONWithUsage(ctx, model, system, user, "episode_script", schema)
+	callStart := time.Now()
+	callCtx, cancel := context.WithTimeout(ctx, scriptCallTimeout)
+	rawJSON, usage, err := client.GenerateJSONWithUsage(callCtx, model, system, user, "episode_script", schema)
+	cancel()
 	if err != nil {
+		slog.Error("episode json call failed", "elapsed", time.Since(callStart).String(), "err", err)
 		return podcast.Episode{}, 0, rawJSON, ai.TokenUsage{}, err
 	}
+	slog.Info("episode json received", "elapsed", time.Since(callStart).String())
 	slog.Info("parsing episode json")
 	episode, err := podcast.ParseEpisodeJSON(rawJSON)
 	if err != nil {
@@ -175,11 +182,16 @@ func generateEpisode(ctx context.Context, client scriptClient, model, system, us
 		const correctionNote = "Tighten to about 800 words (±100) while keeping all fields complete."
 		systemRetry := system + " " + correctionNote
 		slog.Info("retrying episode json for length", "wordCount", wordCount)
-		rawJSON, retryUsage, err := client.GenerateJSONWithUsage(ctx, model, systemRetry, user, "episode_script", schema)
+		retryStart := time.Now()
+		retryCtx, retryCancel := context.WithTimeout(ctx, scriptCallTimeout)
+		rawJSON, retryUsage, err := client.GenerateJSONWithUsage(retryCtx, model, systemRetry, user, "episode_script", schema)
+		retryCancel()
 		if err != nil {
+			slog.Error("episode json retry failed", "elapsed", time.Since(retryStart).String(), "err", err)
 			return podcast.Episode{}, 0, rawJSON, usage, err
 		}
 		usage = usage.Add(retryUsage)
+		slog.Info("episode json retry received", "elapsed", time.Since(retryStart).String())
 		slog.Info("parsing retry episode json")
 		episode, err = podcast.ParseEpisodeJSON(rawJSON)
 		if err != nil {
