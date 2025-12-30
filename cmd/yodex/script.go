@@ -20,7 +20,7 @@ const (
 	retryMinWords = 650
 )
 
-const scriptCallTimeout = 3 * time.Minute
+const scriptCallTimeout = 5 * time.Minute
 
 type scriptClient interface {
 	GenerateText(ctx context.Context, model, system, prompt string) (string, error)
