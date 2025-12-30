@@ -20,8 +20,6 @@ const (
 	retryMinWords = 650
 )
 
-const scriptCallTimeout = 5 * time.Minute
-
 type scriptClient interface {
 	GenerateText(ctx context.Context, model, system, prompt string) (string, error)
 	GenerateJSON(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, error)
@@ -158,9 +156,7 @@ func generateEpisode(ctx context.Context, client scriptClient, model, system, us
 	schema := podcast.EpisodeSchema()
 	slog.Info("generating episode json")
 	callStart := time.Now()
-	callCtx, cancel := context.WithTimeout(ctx, scriptCallTimeout)
-	rawJSON, usage, err := client.GenerateJSONWithUsage(callCtx, model, system, user, "episode_script", schema)
-	cancel()
+	rawJSON, usage, err := client.GenerateJSONWithUsage(ctx, model, system, user, "episode_script", schema)
 	if err != nil {
 		slog.Error("episode json call failed", "elapsed", time.Since(callStart).String(), "err", err)
 		return podcast.Episode{}, 0, rawJSON, ai.TokenUsage{}, err
@@ -183,9 +179,7 @@ func generateEpisode(ctx context.Context, client scriptClient, model, system, us
 		systemRetry := system + " " + correctionNote
 		slog.Info("retrying episode json for length", "wordCount", wordCount)
 		retryStart := time.Now()
-		retryCtx, retryCancel := context.WithTimeout(ctx, scriptCallTimeout)
-		rawJSON, retryUsage, err := client.GenerateJSONWithUsage(retryCtx, model, systemRetry, user, "episode_script", schema)
-		retryCancel()
+		rawJSON, retryUsage, err := client.GenerateJSONWithUsage(ctx, model, systemRetry, user, "episode_script", schema)
 		if err != nil {
 			slog.Error("episode json retry failed", "elapsed", time.Since(retryStart).String(), "err", err)
 			return podcast.Episode{}, 0, rawJSON, usage, err
