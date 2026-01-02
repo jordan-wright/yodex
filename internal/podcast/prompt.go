@@ -6,20 +6,12 @@ import (
 	"strings"
 )
 
-const (
-	TargetWords = 800
-	MinWords    = 750
-	MaxWords    = 900
-)
-
 var requiredSections = []string{
 	"# Title",
 	"## Intro",
-	"## Main",
-	"## Fun Facts",
-	"## Jokes",
-	"## Recap",
-	"## Question",
+	"## Core Idea",
+	"## Deep Dive",
+	"## Outro",
 }
 
 const systemPrompt = "You are an expert kid's science podcaster for advanced 7-year-olds. " +
@@ -27,17 +19,16 @@ const systemPrompt = "You are an expert kid's science podcaster for advanced 7-y
 	"Use clear explanations and relatable analogies. " +
 	"Avoid scary, graphic, or unsafe content."
 
-// BuildScriptPrompts returns the system and user prompts for script generation.
+// BuildScriptPrompts returns the system and base user prompt for section generation.
 func BuildScriptPrompts(topic string) (string, string, error) {
 	topic = strings.TrimSpace(topic)
 	if topic == "" {
 		return "", "", errors.New("topic is required")
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Create an %d-word episode on %q. ", TargetWords, topic)
-	b.WriteString("Return a JSON object matching the schema with fields: ")
-	b.WriteString("title, intro, main, funFacts, jokes, recap, question. ")
-	b.WriteString("Fun facts must be 3-4 items. Jokes must be 2-3 kid-safe items. ")
+	fmt.Fprintf(&b, "You are writing a kid-friendly science podcast episode about %q. ", topic)
+	b.WriteString("Each request is for one section of the episode. ")
+	b.WriteString("Write in a friendly narrator voice, no headings or labels. ")
 	b.WriteString("Keep it upbeat, kid-safe, accurate, and easy to follow. Avoid unsafe instructions.")
 	user := b.String()
 	return systemPrompt, user, nil
