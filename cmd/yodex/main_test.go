@@ -26,7 +26,7 @@ func TestScriptFlagParsing(t *testing.T) {
 	t.Cleanup(func() { newTextClient = origClient })
 
 	fake := &fakeTextClient{
-		responses: []string{makeEpisodeJSON(800)},
+		responses: makeSectionResponses(800),
 	}
 	newTextClient = func(apiKey string) (scriptClient, error) {
 		return fake, nil

@@ -47,7 +47,7 @@ func TestScriptWritesOutputs(t *testing.T) {
 	t.Cleanup(func() { newTextClient = origClient })
 
 	fake := &fakeTextClient{
-		responses: []string{makeEpisodeJSON(800)},
+		responses: makeSectionResponses(800),
 	}
 	newTextClient = func(apiKey string) (scriptClient, error) {
 		return fake, nil
@@ -67,8 +67,8 @@ func TestScriptWritesOutputs(t *testing.T) {
 	if code := run([]string{"script", "--date=2025-09-30", "--topic=Test Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
-	if fake.calls != 1 {
-		t.Fatalf("expected 1 AI call, got %d", fake.calls)
+	if fake.calls != 4 {
+		t.Fatalf("expected 4 AI calls, got %d", fake.calls)
 	}
 
 	date := time.Date(2025, 9, 30, 0, 0, 0, 0, time.UTC)
@@ -100,7 +100,7 @@ func TestScriptRetriesOnLength(t *testing.T) {
 	t.Cleanup(func() { newTextClient = origClient })
 
 	fake := &fakeTextClient{
-		responses: []string{makeEpisodeJSON(100), makeEpisodeJSON(800)},
+		responses: append(makeSectionResponses(100), makeSectionResponses(800)...),
 	}
 	newTextClient = func(apiKey string) (scriptClient, error) {
 		return fake, nil
@@ -120,12 +120,12 @@ func TestScriptRetriesOnLength(t *testing.T) {
 	if code := run([]string{"script", "--date=2025-09-30", "--topic=Retry Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
-	if fake.calls != 2 {
-		t.Fatalf("expected 2 AI calls, got %d", fake.calls)
+	if fake.calls != 8 {
+		t.Fatalf("expected 8 AI calls, got %d", fake.calls)
 	}
 }
 
-func makeEpisodeJSON(targetWords int) string {
+func makeSectionResponses(targetWords int) []string {
 	ep := podcast.Episode{
 		Title: "Test Title",
 		Sections: []podcast.EpisodeSection{
@@ -137,12 +137,16 @@ func makeEpisodeJSON(targetWords int) string {
 	}
 	baseWords := podcast.WordCount(ep.RenderMarkdown())
 	remaining := targetWords - baseWords
-	if remaining < 0 {
-		remaining = 0
+	if remaining < 1 {
+		remaining = 1
 	}
 	ep.Sections[2].Text = makeWordyText(remaining)
-	raw, _ := json.Marshal(ep)
-	return string(raw)
+	return []string{
+		ep.Sections[0].Text,
+		ep.Sections[1].Text,
+		ep.Sections[2].Text,
+		ep.Sections[3].Text,
+	}
 }
 
 func makeWordyText(targetWords int) string {
