@@ -127,20 +127,20 @@ func TestScriptRetriesOnLength(t *testing.T) {
 
 func makeEpisodeJSON(targetWords int) string {
 	ep := podcast.Episode{
-		Title:    "Test Title",
-		Intro:    "Intro text.",
-		Main:     "",
-		FunFacts: []string{"Fact one.", "Fact two.", "Fact three."},
-		Jokes:    []string{"Joke one.", "Joke two."},
-		Recap:    "Recap text.",
-		Question: "What did you learn?",
+		Title: "Test Title",
+		Sections: []podcast.EpisodeSection{
+			{SectionID: "intro", Text: "Intro text."},
+			{SectionID: "core-idea", Text: "Core idea text."},
+			{SectionID: "deep-dive", Text: ""},
+			{SectionID: "outro", Text: "Recap text. What did you learn?"},
+		},
 	}
 	baseWords := podcast.WordCount(ep.RenderMarkdown())
 	remaining := targetWords - baseWords
 	if remaining < 0 {
 		remaining = 0
 	}
-	ep.Main = makeWordyText(remaining)
+	ep.Sections[2].Text = makeWordyText(remaining)
 	raw, _ := json.Marshal(ep)
 	return string(raw)
 }
