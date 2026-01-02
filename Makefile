@@ -8,4 +8,3 @@ test:
 
 run:
 	go run ./cmd/yodex --help
-

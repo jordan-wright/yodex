@@ -7,7 +7,7 @@ import (
 	"flag"
 	"log/slog"
 	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	"yodex/internal/ai"
@@ -22,9 +22,7 @@ const (
 
 type scriptClient interface {
 	GenerateText(ctx context.Context, model, system, prompt string) (string, error)
-	GenerateJSON(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, error)
 	GenerateTextWithUsage(ctx context.Context, model, system, prompt string) (string, ai.TokenUsage, error)
-	GenerateJSONWithUsage(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, ai.TokenUsage, error)
 }
 
 var newTextClient = func(apiKey string) (scriptClient, error) {
@@ -100,9 +98,8 @@ func cmdScript(args []string) error {
 	}
 	slog.Info("prompts built")
 
-	episode, wordCount, rawJSON, usage, err := generateEpisode(ctx, client, cfg.TextModel, system, user)
+	episode, wordCount, usage, err := generateEpisode(ctx, client, cfg.TextModel, system, user, topicText)
 	if err != nil {
-		writeRawJSON(date, rawJSON, cfg.Overwrite)
 		return err
 	}
 	usage = usage.Add(topicUsage)
@@ -152,83 +149,51 @@ func cmdScript(args []string) error {
 	return nil
 }
 
-func generateEpisode(ctx context.Context, client scriptClient, model, system, user string) (podcast.Episode, int, string, ai.TokenUsage, error) {
-	schema := podcast.EpisodeSchema()
-	slog.Info("generating episode json")
-	callStart := time.Now()
-	rawJSON, usage, err := client.GenerateJSONWithUsage(ctx, model, system, user, "episode_script", schema)
-	if err != nil {
-		slog.Error("episode json call failed", "elapsed", time.Since(callStart).String(), "err", err)
-		return podcast.Episode{}, 0, rawJSON, ai.TokenUsage{}, err
+func generateEpisode(ctx context.Context, client scriptClient, model, system, basePrompt, topic string) (podcast.Episode, int, ai.TokenUsage, error) {
+	sections := podcast.StandardSectionSchema(topic)
+	episodeSections := make([]podcast.EpisodeSection, 0, len(sections))
+	var usage ai.TokenUsage
+	var anchor string
+
+	for i, spec := range sections {
+		if i > 0 {
+			spec.ContinuityContext = anchor
+		}
+		userPrompt := podcast.BuildSectionPrompt(basePrompt, spec)
+		slog.Info("generating episode section", "sectionID", spec.SectionID)
+		callStart := time.Now()
+		text, callUsage, err := client.GenerateTextWithUsage(ctx, model, system, userPrompt)
+		if err != nil {
+			slog.Error("section call failed", "sectionID", spec.SectionID, "elapsed", time.Since(callStart).String(), "err", err)
+			return podcast.Episode{}, 0, ai.TokenUsage{}, err
+		}
+		slog.Info("section received", "sectionID", spec.SectionID, "elapsed", time.Since(callStart).String())
+		usage = usage.Add(callUsage)
+		cleanText := strings.TrimSpace(text)
+		episodeSections = append(episodeSections, podcast.EpisodeSection{
+			SectionID: spec.SectionID,
+			Text:      cleanText,
+		})
+		anchor = podcast.BuildContinuityAnchor(cleanText, spec.SectionID)
 	}
-	slog.Info("episode json received", "elapsed", time.Since(callStart).String())
-	slog.Info("parsing episode json")
-	episode, err := podcast.ParseEpisodeJSON(rawJSON)
-	if err != nil {
-		return podcast.Episode{}, 0, rawJSON, usage, err
+
+	episode := podcast.Episode{
+		Title:    topic,
+		Sections: episodeSections,
 	}
 	slog.Info("validating episode fields")
 	if err := episode.Validate(); err != nil {
-		return podcast.Episode{}, 0, rawJSON, usage, err
+		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}
 	slog.Info("rendering markdown")
 	markdown := episode.RenderMarkdown()
 	wordCount := podcast.WordCount(markdown)
-	if wordCount < retryMinWords {
-		const correctionNote = "Tighten to about 800 words (±100) while keeping all fields complete."
-		systemRetry := system + " " + correctionNote
-		slog.Info("retrying episode json for length", "wordCount", wordCount)
-		retryStart := time.Now()
-		rawJSON, retryUsage, err := client.GenerateJSONWithUsage(ctx, model, systemRetry, user, "episode_script", schema)
-		if err != nil {
-			slog.Error("episode json retry failed", "elapsed", time.Since(retryStart).String(), "err", err)
-			return podcast.Episode{}, 0, rawJSON, usage, err
-		}
-		usage = usage.Add(retryUsage)
-		slog.Info("episode json retry received", "elapsed", time.Since(retryStart).String())
-		slog.Info("parsing retry episode json")
-		episode, err = podcast.ParseEpisodeJSON(rawJSON)
-		if err != nil {
-			return podcast.Episode{}, 0, rawJSON, usage, err
-		}
-		slog.Info("validating retry episode fields")
-		if err := episode.Validate(); err != nil {
-			return podcast.Episode{}, 0, rawJSON, usage, err
-		}
-		slog.Info("rendering retry markdown")
-		markdown = episode.RenderMarkdown()
-		wordCount = podcast.WordCount(markdown)
-	}
 	slog.Info("running safety check", "wordCount", wordCount)
 	if err := podcast.BasicSafetyCheck(markdown); err != nil {
-		return podcast.Episode{}, 0, rawJSON, usage, err
+		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}
 	if wordCount < retryMinWords {
-		return podcast.Episode{}, 0, rawJSON, usage, errors.New("script length out of bounds after retry")
+		return podcast.Episode{}, 0, ai.TokenUsage{}, errors.New("script length out of bounds")
 	}
-	return episode, wordCount, rawJSON, usage, nil
-}
-
-func writeRawJSON(date time.Time, raw string, overwrite bool) {
-	builder := paths.New("")
-	dir := builder.OutDir(date)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		slog.Warn("failed to create output dir for raw json", "err", err, "dir", dir)
-		return
-	}
-	rawPath := filepath.Join(dir, "episode.raw.json")
-	if !overwrite {
-		if _, err := os.Stat(rawPath); err == nil {
-			slog.Warn("raw json exists; not overwriting", "path", rawPath)
-			return
-		} else if !errors.Is(err, os.ErrNotExist) {
-			slog.Warn("failed to check raw json path", "err", err, "path", rawPath)
-			return
-		}
-	}
-	if err := os.WriteFile(rawPath, []byte(raw), 0o644); err != nil {
-		slog.Warn("failed to write raw json", "err", err, "path", rawPath)
-		return
-	}
-	slog.Warn("wrote raw json for debugging", "path", rawPath)
+	return episode, wordCount, usage, nil
 }

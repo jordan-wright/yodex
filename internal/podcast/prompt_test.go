@@ -13,16 +13,13 @@ func TestBuildScriptPrompts(t *testing.T) {
 	if system == "" || user == "" {
 		t.Fatalf("expected non-empty prompts")
 	}
-	if !strings.Contains(user, "JSON") {
-		t.Fatalf("expected JSON instruction in user prompt")
-	}
-	if !strings.Contains(user, "title") || !strings.Contains(user, "intro") {
-		t.Fatalf("expected field names in user prompt")
+	if !strings.Contains(user, "Clouds and Rain") {
+		t.Fatalf("expected topic in user prompt")
 	}
 }
 
 func TestValidateSections(t *testing.T) {
-	text := "# Title\n## Intro\n## Main\n## Fun Facts\n## Jokes\n## Recap\n## Question\n"
+	text := "# Title\n## Intro\n## Core Idea\n## Deep Dive\n## Outro\n"
 	if err := ValidateSections(text); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
