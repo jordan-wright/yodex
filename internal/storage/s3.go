@@ -1,8 +1,11 @@
 package storage
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path"
@@ -13,11 +16,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 )
 
 type s3API interface {
 	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
 	CopyObject(ctx context.Context, params *s3.CopyObjectInput, optFns ...func(*s3.Options)) (*s3.CopyObjectOutput, error)
+	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
 }
 
 // Uploader uploads episode artifacts to S3.
@@ -89,6 +94,36 @@ func (u *Uploader) UploadFile(ctx context.Context, key, localPath, contentType, 
 	return err
 }
 
+// UploadBytes uploads in-memory data to the given key.
+func (u *Uploader) UploadBytes(ctx context.Context, key string, data []byte, contentType, cacheControl string) error {
+	input := &s3.PutObjectInput{
+		Bucket: aws.String(u.bucket),
+		Key:    aws.String(key),
+		Body:   bytes.NewReader(data),
+	}
+	if contentType != "" {
+		input.ContentType = aws.String(contentType)
+	}
+	if cacheControl != "" {
+		input.CacheControl = aws.String(cacheControl)
+	}
+	_, err := u.client.PutObject(ctx, input)
+	return err
+}
+
+// DownloadBytes downloads an object into memory.
+func (u *Uploader) DownloadBytes(ctx context.Context, key string) ([]byte, error) {
+	out, err := u.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(u.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer out.Body.Close()
+	return io.ReadAll(out.Body)
+}
+
 // CopyToLatest copies an existing object to the latest key.
 func (u *Uploader) CopyToLatest(ctx context.Context, srcKey, filename, contentType, cacheControl string) error {
 	latestKey := u.KeyForLatest(filename)
@@ -131,4 +166,18 @@ func encodeCopySource(bucket, key string) string {
 		parts[i] = url.PathEscape(part)
 	}
 	return bucket + "/" + strings.Join(parts, "/")
+}
+
+// IsNotFound returns true when the error indicates the object does not exist.
+func IsNotFound(err error) bool {
+	var noSuchKey *types.NoSuchKey
+	if errors.As(err, &noSuchKey) {
+		return true
+	}
+	var apiErr smithy.APIError
+	if errors.As(err, &apiErr) {
+		code := apiErr.ErrorCode()
+		return code == "NoSuchKey" || code == "NotFound"
+	}
+	return false
 }
