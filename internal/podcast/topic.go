@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"yodex/internal/ai"
 	"yodex/internal/config"
@@ -31,13 +32,12 @@ func SelectTopic(ctx context.Context, cfg config.Config, ai TextGenerator) (stri
 		return "", errors.New("ai client is required to generate a topic")
 	}
 
-	prompt := "Propose a single science topic for an advanced 7-year-old. " +
-		"Examples of topics: animals, cultural celebrations, science, astronomy, history, geography, physics, chemistry, biology, or nature. " +
-		"The topic should be interesting and engaging for a 7-year-old. " +
-		"The topic should be safe and appropriate for a 7-year-old. " +
-		"You may focus on a specific animal, plant, planet, star, or some other specific thing to do a deep-dive, or you may focus on a general science topic. " +
-		"The topic should be accurate and up to date. " +
-		"Reply with a short title only."
+	history, err := loadTopicHistory(cfg.TopicHistoryPath)
+	if err != nil {
+		return "", err
+	}
+	history = trimTopicHistory(history, cfg.TopicHistorySize)
+	prompt := buildTopicPrompt(history.Entries)
 	text, err := ai.GenerateText(ctx, cfg.TextModel, topicSystemPrompt, prompt)
 	if err != nil {
 		return "", err
@@ -45,6 +45,12 @@ func SelectTopic(ctx context.Context, cfg config.Config, ai TextGenerator) (stri
 	topic := sanitizeTopic(text)
 	if topic == "" {
 		return "", fmt.Errorf("empty topic generated")
+	}
+	if err := appendTopicHistory(cfg.TopicHistoryPath, cfg.TopicHistorySize, history, TopicHistoryEntry{
+		Topic:       topic,
+		PublishedAt: time.Now().UTC(),
+	}); err != nil {
+		return "", err
 	}
 	return topic, nil
 }
@@ -58,13 +64,12 @@ func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenera
 		return "", ai.TokenUsage{}, errors.New("ai client is required to generate a topic")
 	}
 
-	prompt := "Propose a single science topic for an advanced 7-year-old. " +
-		"Examples of topics: animals, cultural celebrations, science, astronomy, history, geography, physics, chemistry, biology, or nature. " +
-		"The topic should be interesting and engaging for a 7-year-old. " +
-		"The topic should be safe and appropriate for a 7-year-old. " +
-		"You may focus on a specific animal, plant, planet, star, or some other specific thing to do a deep-dive, or you may focus on a general science topic. " +
-		"The topic should be accurate and up to date. " +
-		"Reply with a short title only."
+	history, err := loadTopicHistory(cfg.TopicHistoryPath)
+	if err != nil {
+		return "", ai.TokenUsage{}, err
+	}
+	history = trimTopicHistory(history, cfg.TopicHistorySize)
+	prompt := buildTopicPrompt(history.Entries)
 
 	if withUsage, ok := gen.(TextGeneratorWithUsage); ok {
 		text, usage, err := withUsage.GenerateTextWithUsage(ctx, cfg.TextModel, topicSystemPrompt, prompt)
@@ -74,6 +79,12 @@ func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenera
 		topic := sanitizeTopic(text)
 		if topic == "" {
 			return "", ai.TokenUsage{}, fmt.Errorf("empty topic generated")
+		}
+		if err := appendTopicHistory(cfg.TopicHistoryPath, cfg.TopicHistorySize, history, TopicHistoryEntry{
+			Topic:       topic,
+			PublishedAt: time.Now().UTC(),
+		}); err != nil {
+			return "", ai.TokenUsage{}, err
 		}
 		return topic, usage, nil
 	}
@@ -86,7 +97,37 @@ func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenera
 	if topic == "" {
 		return "", ai.TokenUsage{}, fmt.Errorf("empty topic generated")
 	}
+	if err := appendTopicHistory(cfg.TopicHistoryPath, cfg.TopicHistorySize, history, TopicHistoryEntry{
+		Topic:       topic,
+		PublishedAt: time.Now().UTC(),
+	}); err != nil {
+		return "", ai.TokenUsage{}, err
+	}
 	return topic, ai.TokenUsage{}, nil
+}
+
+func buildTopicPrompt(recent []TopicHistoryEntry) string {
+	prompt := "Propose a single science topic for an advanced 7-year-old. " +
+		"Examples of topics: animals, cultural celebrations, science, astronomy, history, geography, physics, chemistry, biology, or nature. " +
+		"The topic should be interesting and engaging for a 7-year-old. " +
+		"The topic should be safe and appropriate for a 7-year-old. " +
+		"You may focus on a specific animal, plant, planet, star, or some other specific thing to do a deep-dive, or you may focus on a general science topic. " +
+		"The topic should be accurate and up to date. " +
+		"Reply with a short title only."
+	if len(recent) == 0 {
+		return prompt
+	}
+
+	var b strings.Builder
+	b.WriteString(prompt)
+	b.WriteString("\n\nRecent topics (do not repeat or closely paraphrase any topics in this list):\n")
+	for _, entry := range recent {
+		if strings.TrimSpace(entry.Topic) == "" {
+			continue
+		}
+		fmt.Fprintf(&b, "- %s\n", strings.TrimSpace(entry.Topic))
+	}
+	return strings.TrimSpace(b.String())
 }
 
 func sanitizeTopic(text string) string {
