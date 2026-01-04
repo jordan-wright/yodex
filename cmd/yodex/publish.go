@@ -60,7 +60,7 @@ func cmdPublish(args []string) error {
 	if err != nil {
 		return err
 	}
-	envOv, apiKey := cfgpkg.FromEnv()
+	envOv, apiKey, elevenLabsKey := cfgpkg.FromEnv()
 	var flagOv cfgpkg.Overrides
 	if bucket.set {
 		flagOv.S3Bucket = &bucket.v
@@ -71,7 +71,7 @@ func cmdPublish(args []string) error {
 	if region.set {
 		flagOv.Region = &region.v
 	}
-	cfg := cfgpkg.Merge(fileCfg, envOv, flagOv, apiKey)
+	cfg := cfgpkg.Merge(fileCfg, envOv, flagOv, apiKey, elevenLabsKey)
 
 	if err := cfgpkg.ValidateForPublish(cfg); err != nil {
 		return err

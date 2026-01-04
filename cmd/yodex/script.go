@@ -56,7 +56,7 @@ func cmdScript(args []string) error {
 	if err != nil {
 		return err
 	}
-	envOv, apiKey := cfgpkg.FromEnv()
+	envOv, apiKey, elevenLabsKey := cfgpkg.FromEnv()
 	var flagOv cfgpkg.Overrides
 	if topic.set {
 		flagOv.Topic = &topic.v
@@ -64,7 +64,7 @@ func cmdScript(args []string) error {
 	if overwrite.set {
 		flagOv.Overwrite = &overwrite.v
 	}
-	cfg := cfgpkg.Merge(fileCfg, envOv, flagOv, apiKey)
+	cfg := cfgpkg.Merge(fileCfg, envOv, flagOv, apiKey, elevenLabsKey)
 
 	if err := cfgpkg.ValidateForScript(cfg); err != nil {
 		return err

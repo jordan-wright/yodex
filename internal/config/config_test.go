@@ -16,7 +16,7 @@ func TestMergePrecedence(t *testing.T) {
 	flags := Overrides{}
 	flags.Voice = strPtr("flag-voice")
 
-	cfg := Merge(file, env, flags, "sk-key")
+	cfg := Merge(file, env, flags, "sk-key", "el-key")
 	if cfg.Voice != "flag-voice" {
 		t.Fatalf("voice precedence wrong: %s", cfg.Voice)
 	}
@@ -25,6 +25,9 @@ func TestMergePrecedence(t *testing.T) {
 	}
 	if cfg.OpenAIAPIKey != "sk-key" {
 		t.Fatalf("apikey not set")
+	}
+	if cfg.ElevenLabsAPIKey != "el-key" {
+		t.Fatalf("elevenlabs key not set")
 	}
 }
 
@@ -43,7 +46,8 @@ func TestFromEnv(t *testing.T) {
 	t.Setenv("YODEX_VOICE", "env-voice")
 	t.Setenv("YODEX_DEBUG", "1")
 	t.Setenv("OPENAI_API_KEY", "sk-xyz")
-	ov, key := FromEnv()
+	t.Setenv("ELEVENLABS_API_KEY", "el-123")
+	ov, key, elevenLabsKey := FromEnv()
 	if ov.Voice == nil || *ov.Voice != "env-voice" {
 		t.Fatalf("voice not read from env")
 	}
@@ -52,6 +56,9 @@ func TestFromEnv(t *testing.T) {
 	}
 	if key != "sk-xyz" {
 		t.Fatalf("apikey not read from env")
+	}
+	if elevenLabsKey != "el-123" {
+		t.Fatalf("elevenlabs key not read from env")
 	}
 }
 

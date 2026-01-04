@@ -21,12 +21,14 @@ type Config struct {
 	Overwrite            bool   `json:"overwrite,omitempty"`
 	TextModel            string `json:"textModel,omitempty"`
 	TTSModel             string `json:"ttsModel,omitempty"`
+	TTSProvider          string `json:"ttsProvider,omitempty"`
 	TopicHistorySize     int    `json:"topicHistorySize,omitempty"`
 	TopicHistoryPath     string `json:"topicHistoryPath,omitempty"`
 	TopicHistoryS3Prefix string `json:"topicHistoryS3Prefix,omitempty"`
 
 	// Not persisted to file; sourced from env only.
-	OpenAIAPIKey string `json:"-"`
+	OpenAIAPIKey     string `json:"-"`
+	ElevenLabsAPIKey string `json:"-"`
 }
 
 // Overrides represents optional overrides from env or flags.
@@ -41,6 +43,7 @@ type Overrides struct {
 	Overwrite            *bool
 	TextModel            *string
 	TTSModel             *string
+	TTSProvider          *string
 	TopicHistorySize     *int
 	TopicHistoryPath     *string
 	TopicHistoryS3Prefix *string
@@ -53,6 +56,7 @@ func Default() Config {
 		Region:           "us-west-2",
 		TextModel:        "gpt-5-mini",
 		TTSModel:         "gpt-4o-mini-tts",
+		TTSProvider:      "openai",
 		TopicHistorySize: 10,
 		TopicHistoryPath: filepath.Join("out", "topic-history.json"),
 	}
@@ -77,10 +81,11 @@ func LoadFile(path string) (Config, error) {
 	return cfg, nil
 }
 
-// FromEnv reads env vars and returns overrides and the OpenAI key.
-func FromEnv() (Overrides, string) {
+// FromEnv reads env vars and returns overrides and the API keys.
+func FromEnv() (Overrides, string, string) {
 	var ov Overrides
 	var apiKey string
+	var elevenLabsKey string
 
 	if v, ok := os.LookupEnv("YODEX_VOICE"); ok {
 		ov.Voice = &[]string{v}[0]
@@ -110,6 +115,9 @@ func FromEnv() (Overrides, string) {
 	if v, ok := os.LookupEnv("YODEX_TTS_MODEL"); ok {
 		ov.TTSModel = &[]string{v}[0]
 	}
+	if v, ok := os.LookupEnv("YODEX_TTS_PROVIDER"); ok {
+		ov.TTSProvider = &[]string{v}[0]
+	}
 	if v, ok := os.LookupEnv("YODEX_TOPIC_HISTORY_SIZE"); ok {
 		if i, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
 			ov.TopicHistorySize = &[]int{i}[0]
@@ -122,7 +130,8 @@ func FromEnv() (Overrides, string) {
 		ov.TopicHistoryS3Prefix = &[]string{v}[0]
 	}
 	apiKey = os.Getenv("OPENAI_API_KEY")
-	return ov, apiKey
+	elevenLabsKey = os.Getenv("ELEVENLABS_API_KEY")
+	return ov, apiKey, elevenLabsKey
 }
 
 func parseBool(s string) (bool, error) {
@@ -141,7 +150,7 @@ func parseBool(s string) (bool, error) {
 }
 
 // Merge applies overrides in order: file -> env -> flags.
-func Merge(fileCfg Config, env Overrides, flags Overrides, apiKey string) Config {
+func Merge(fileCfg Config, env Overrides, flags Overrides, openAIKey string, elevenLabsKey string) Config {
 	cfg := fileCfg
 
 	apply := func(ov Overrides) {
@@ -172,6 +181,9 @@ func Merge(fileCfg Config, env Overrides, flags Overrides, apiKey string) Config
 		if ov.TTSModel != nil {
 			cfg.TTSModel = *ov.TTSModel
 		}
+		if ov.TTSProvider != nil {
+			cfg.TTSProvider = *ov.TTSProvider
+		}
 		if ov.TopicHistorySize != nil {
 			cfg.TopicHistorySize = *ov.TopicHistorySize
 		}
@@ -186,7 +198,8 @@ func Merge(fileCfg Config, env Overrides, flags Overrides, apiKey string) Config
 	apply(env)
 	apply(flags)
 
-	cfg.OpenAIAPIKey = apiKey
+	cfg.OpenAIAPIKey = openAIKey
+	cfg.ElevenLabsAPIKey = elevenLabsKey
 	return cfg
 }
 
@@ -202,8 +215,21 @@ func ValidateForScript(cfg Config) error {
 }
 
 func ValidateForAudio(cfg Config) error {
-	if cfg.OpenAIAPIKey == "" {
-		return errors.New("OPENAI_API_KEY is required for audio generation")
+	provider := strings.ToLower(strings.TrimSpace(cfg.TTSProvider))
+	if provider == "" {
+		provider = "openai"
+	}
+	switch provider {
+	case "openai":
+		if cfg.OpenAIAPIKey == "" {
+			return errors.New("OPENAI_API_KEY is required for audio generation")
+		}
+	case "elevenlabs":
+		if cfg.ElevenLabsAPIKey == "" {
+			return errors.New("ELEVENLABS_API_KEY is required for audio generation")
+		}
+	default:
+		return fmt.Errorf("unsupported tts provider: %s", cfg.TTSProvider)
 	}
 	if cfg.TTSModel == "" {
 		return errors.New("tts model is required")

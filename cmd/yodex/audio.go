@@ -4,16 +4,29 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"yodex/internal/ai"
 	cfgpkg "yodex/internal/config"
 	"yodex/internal/paths"
 )
 
-var newTTSClient = func(apiKey string) (ai.TTSClient, error) {
-	return ai.New(apiKey, "")
+var newTTSClient = func(cfg cfgpkg.Config) (ai.TTSClient, error) {
+	provider := strings.ToLower(strings.TrimSpace(cfg.TTSProvider))
+	if provider == "" {
+		provider = "openai"
+	}
+	switch provider {
+	case "openai":
+		return ai.New(cfg.OpenAIAPIKey, "")
+	case "elevenlabs":
+		return ai.NewElevenLabs(cfg.ElevenLabsAPIKey)
+	default:
+		return nil, fmt.Errorf("unsupported tts provider: %s", cfg.TTSProvider)
+	}
 }
 
 // yodex audio
@@ -40,18 +53,18 @@ func cmdAudio(args []string) error {
 	if err != nil {
 		return err
 	}
-	envOv, apiKey := cfgpkg.FromEnv()
+	envOv, apiKey, elevenLabsKey := cfgpkg.FromEnv()
 	var flagOv cfgpkg.Overrides
 	if voice.set {
 		flagOv.Voice = &voice.v
 	}
-	cfg := cfgpkg.Merge(fileCfg, envOv, flagOv, apiKey)
+	cfg := cfgpkg.Merge(fileCfg, envOv, flagOv, apiKey, elevenLabsKey)
 
 	if err := cfgpkg.ValidateForAudio(cfg); err != nil {
 		return err
 	}
 
-	client, err := newTTSClient(cfg.OpenAIAPIKey)
+	client, err := newTTSClient(cfg)
 	if err != nil {
 		return err
 	}
@@ -84,6 +97,13 @@ func cmdAudio(args []string) error {
 		return err
 	}
 
-	slog.Info("audio generated", "date", date.Format("2006-01-02"), "voice", cfg.Voice, "ttsModel", cfg.TTSModel, "path", mp3Path)
+	slog.Info(
+		"audio generated",
+		"date", date.Format("2006-01-02"),
+		"voice", cfg.Voice,
+		"ttsModel", cfg.TTSModel,
+		"ttsProvider", cfg.TTSProvider,
+		"path", mp3Path,
+	)
 	return nil
 }
