@@ -1,11 +1,14 @@
 package podcast
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
-	"os"
-	"path/filepath"
+	"fmt"
+	"path"
 	"time"
+
+	"yodex/internal/config"
+	"yodex/internal/storage"
 )
 
 // TopicHistoryEntry tracks recent topics to avoid repetition.
@@ -20,36 +23,28 @@ type TopicHistory struct {
 	Entries []TopicHistoryEntry `json:"entries"`
 }
 
-func loadTopicHistory(path string) (TopicHistory, error) {
-	if path == "" {
-		return TopicHistory{}, nil
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return TopicHistory{}, nil
-		}
-		return TopicHistory{}, err
-	}
-	var history TopicHistory
-	if err := json.Unmarshal(data, &history); err != nil {
-		return TopicHistory{}, err
-	}
-	return history, nil
+type topicHistoryStore interface {
+	DownloadBytes(ctx context.Context, key string) ([]byte, error)
+	UploadBytes(ctx context.Context, key string, data []byte, contentType, cacheControl string) error
+	Prefix() string
 }
 
-func saveTopicHistory(path string, history TopicHistory) error {
-	if path == "" {
-		return nil
+var newTopicHistoryStore = func(ctx context.Context, cfg config.Config) (topicHistoryStore, error) {
+	return storage.New(ctx, cfg.S3Bucket, cfg.TopicHistoryS3Prefix, cfg.Region)
+}
+
+func loadTopicHistory(ctx context.Context, cfg config.Config) (TopicHistory, error) {
+	if cfg.TopicHistoryS3Prefix != "" {
+		return loadTopicHistoryFromS3(ctx, cfg)
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
+	return TopicHistory{}, nil
+}
+
+func saveTopicHistory(ctx context.Context, cfg config.Config, history TopicHistory) error {
+	if cfg.TopicHistoryS3Prefix != "" {
+		return saveTopicHistoryToS3(ctx, cfg, history)
 	}
-	data, err := json.MarshalIndent(history, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, data, 0o644)
+	return nil
 }
 
 func trimTopicHistory(history TopicHistory, size int) TopicHistory {
@@ -62,11 +57,58 @@ func trimTopicHistory(history TopicHistory, size int) TopicHistory {
 	return history
 }
 
-func appendTopicHistory(path string, size int, history TopicHistory, entry TopicHistoryEntry) error {
-	if size <= 0 || path == "" {
+func appendTopicHistory(ctx context.Context, cfg config.Config, history TopicHistory, entry TopicHistoryEntry) error {
+	if cfg.TopicHistorySize <= 0 {
+		return nil
+	}
+	if cfg.TopicHistoryS3Prefix == "" {
 		return nil
 	}
 	history.Entries = append([]TopicHistoryEntry{entry}, history.Entries...)
-	history = trimTopicHistory(history, size)
-	return saveTopicHistory(path, history)
+	history = trimTopicHistory(history, cfg.TopicHistorySize)
+	return saveTopicHistory(ctx, cfg, history)
+}
+
+func loadTopicHistoryFromS3(ctx context.Context, cfg config.Config) (TopicHistory, error) {
+	store, err := newTopicHistoryStore(ctx, cfg)
+	if err != nil {
+		return TopicHistory{}, err
+	}
+	key := topicHistoryKey(store)
+	data, err := store.DownloadBytes(ctx, key)
+	if err != nil {
+		if storage.IsNotFound(err) {
+			return TopicHistory{}, nil
+		}
+		return TopicHistory{}, err
+	}
+	var history TopicHistory
+	if err := json.Unmarshal(data, &history); err != nil {
+		return TopicHistory{}, err
+	}
+	return history, nil
+}
+
+func saveTopicHistoryToS3(ctx context.Context, cfg config.Config, history TopicHistory) error {
+	store, err := newTopicHistoryStore(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	key := topicHistoryKey(store)
+	data, err := json.MarshalIndent(history, "", "  ")
+	if err != nil {
+		return err
+	}
+	if err := store.UploadBytes(ctx, key, data, "application/json", "no-cache"); err != nil {
+		return fmt.Errorf("upload topic history: %w", err)
+	}
+	return nil
+}
+
+func topicHistoryKey(store topicHistoryStore) string {
+	prefix := store.Prefix()
+	if prefix == "" {
+		return "topic-history.json"
+	}
+	return path.Join(prefix, "topic-history.json")
 }

@@ -32,7 +32,7 @@ func SelectTopic(ctx context.Context, cfg config.Config, ai TextGenerator) (stri
 		return "", errors.New("ai client is required to generate a topic")
 	}
 
-	history, err := loadTopicHistory(cfg.TopicHistoryPath)
+	history, err := loadTopicHistory(ctx, cfg)
 	if err != nil {
 		return "", err
 	}
@@ -46,7 +46,7 @@ func SelectTopic(ctx context.Context, cfg config.Config, ai TextGenerator) (stri
 	if topic == "" {
 		return "", fmt.Errorf("empty topic generated")
 	}
-	if err := appendTopicHistory(cfg.TopicHistoryPath, cfg.TopicHistorySize, history, TopicHistoryEntry{
+	if err := appendTopicHistory(ctx, cfg, history, TopicHistoryEntry{
 		Topic:       topic,
 		PublishedAt: time.Now().UTC(),
 	}); err != nil {
@@ -64,7 +64,7 @@ func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenera
 		return "", ai.TokenUsage{}, errors.New("ai client is required to generate a topic")
 	}
 
-	history, err := loadTopicHistory(cfg.TopicHistoryPath)
+	history, err := loadTopicHistory(ctx, cfg)
 	if err != nil {
 		return "", ai.TokenUsage{}, err
 	}
@@ -80,7 +80,7 @@ func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenera
 		if topic == "" {
 			return "", ai.TokenUsage{}, fmt.Errorf("empty topic generated")
 		}
-		if err := appendTopicHistory(cfg.TopicHistoryPath, cfg.TopicHistorySize, history, TopicHistoryEntry{
+		if err := appendTopicHistory(ctx, cfg, history, TopicHistoryEntry{
 			Topic:       topic,
 			PublishedAt: time.Now().UTC(),
 		}); err != nil {
@@ -97,7 +97,7 @@ func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenera
 	if topic == "" {
 		return "", ai.TokenUsage{}, fmt.Errorf("empty topic generated")
 	}
-	if err := appendTopicHistory(cfg.TopicHistoryPath, cfg.TopicHistorySize, history, TopicHistoryEntry{
+	if err := appendTopicHistory(ctx, cfg, history, TopicHistoryEntry{
 		Topic:       topic,
 		PublishedAt: time.Now().UTC(),
 	}); err != nil {

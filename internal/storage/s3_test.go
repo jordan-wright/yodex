@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 type fakeS3 struct {
 	lastPut  *s3.PutObjectInput
 	lastCopy *s3.CopyObjectInput
+	lastGet  *s3.GetObjectInput
 }
 
 func (f *fakeS3) PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
@@ -27,6 +29,11 @@ func (f *fakeS3) PutObject(ctx context.Context, params *s3.PutObjectInput, optFn
 func (f *fakeS3) CopyObject(ctx context.Context, params *s3.CopyObjectInput, optFns ...func(*s3.Options)) (*s3.CopyObjectOutput, error) {
 	f.lastCopy = params
 	return &s3.CopyObjectOutput{}, nil
+}
+
+func (f *fakeS3) GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	f.lastGet = params
+	return &s3.GetObjectOutput{Body: io.NopCloser(strings.NewReader("data"))}, nil
 }
 
 func TestKeyConstruction(t *testing.T) {
