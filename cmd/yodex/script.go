@@ -104,7 +104,6 @@ func cmdScript(args []string) error {
 	var episode podcast.Episode
 	var wordCount int
 	var usage ai.TokenUsage
-	var err error
 	for attempt := 1; attempt <= maxScriptAttempts; attempt++ {
 		var attemptUsage ai.TokenUsage
 		episode, wordCount, attemptUsage, err = generateEpisode(ctx, client, cfg.TextModel, system, user, topicText)
