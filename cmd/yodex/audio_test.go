@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"yodex/internal/ai"
 	"yodex/internal/paths"
 )
 
@@ -31,7 +32,7 @@ func TestAudioWritesMP3(t *testing.T) {
 	t.Cleanup(func() { newTTSClient = origClient })
 
 	fake := &fakeTTSClient{}
-	newTTSClient = func(apiKey string) (ttsClient, error) {
+	newTTSClient = func(apiKey string) (ai.TTSClient, error) {
 		return fake, nil
 	}
 

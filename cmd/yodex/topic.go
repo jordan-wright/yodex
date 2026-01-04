@@ -35,7 +35,7 @@ func cmdTopic(args []string) error {
 	envOv, apiKey := cfgpkg.FromEnv()
 	cfg := cfgpkg.Merge(fileCfg, envOv, cfgpkg.Overrides{}, apiKey)
 
-	var client *ai.Client
+	var client ai.TextClient
 	if cfg.Topic == "" {
 		if cfg.OpenAIAPIKey == "" {
 			return errors.New("OPENAI_API_KEY is required to generate a topic")
