@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"io"
 	"log/slog"
 	"os"
 
@@ -13,11 +12,7 @@ import (
 	"yodex/internal/paths"
 )
 
-type ttsClient interface {
-	TTS(ctx context.Context, model, voice, text string, w io.Writer) error
-}
-
-var newTTSClient = func(apiKey string) (ttsClient, error) {
+var newTTSClient = func(apiKey string) (ai.TTSClient, error) {
 	return ai.New(apiKey, "")
 }
 

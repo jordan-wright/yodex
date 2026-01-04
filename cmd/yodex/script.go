@@ -16,12 +16,7 @@ import (
 	"yodex/internal/podcast"
 )
 
-type scriptClient interface {
-	GenerateText(ctx context.Context, model, system, prompt string) (string, error)
-	GenerateTextWithUsage(ctx context.Context, model, system, prompt string) (string, ai.TokenUsage, error)
-}
-
-var newTextClient = func(apiKey string) (scriptClient, error) {
+var newTextClient = func(apiKey string) (ai.TextClient, error) {
 	return ai.New(apiKey, "")
 }
 
@@ -145,7 +140,7 @@ func cmdScript(args []string) error {
 	return nil
 }
 
-func generateEpisode(ctx context.Context, client scriptClient, model, system, basePrompt, topic string) (podcast.Episode, int, ai.TokenUsage, error) {
+func generateEpisode(ctx context.Context, client ai.TextClient, model, system, basePrompt, topic string) (podcast.Episode, int, ai.TokenUsage, error) {
 	sections := podcast.StandardSectionSchema(topic)
 	episodeSections := make([]podcast.EpisodeSection, 0, len(sections))
 	var usage ai.TokenUsage

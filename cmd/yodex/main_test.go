@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"yodex/internal/ai"
 	"yodex/internal/paths"
 )
 
@@ -28,7 +29,7 @@ func TestScriptFlagParsing(t *testing.T) {
 	fake := &fakeTextClient{
 		responses: makeSectionResponses(800),
 	}
-	newTextClient = func(apiKey string) (scriptClient, error) {
+	newTextClient = func(apiKey string) (ai.TextClient, error) {
 		return fake, nil
 	}
 
@@ -53,7 +54,7 @@ func TestAudioFlagParsing(t *testing.T) {
 	t.Cleanup(func() { newTTSClient = origClient })
 
 	fake := &fakeTTSClient{}
-	newTTSClient = func(apiKey string) (ttsClient, error) {
+	newTTSClient = func(apiKey string) (ai.TTSClient, error) {
 		return fake, nil
 	}
 
