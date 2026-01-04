@@ -90,17 +90,17 @@ func TestScriptWritesOutputs(t *testing.T) {
 	if meta.Topic != "Test Topic" {
 		t.Fatalf("meta topic mismatch: %s", meta.Topic)
 	}
-	if meta.WordCount < retryMinWords {
-		t.Fatalf("meta wordCount out of bounds: %d", meta.WordCount)
+	if meta.WordCount <= 0 {
+		t.Fatalf("meta wordCount missing: %d", meta.WordCount)
 	}
 }
 
-func TestScriptRetriesOnLength(t *testing.T) {
+func TestScriptAcceptsShorterScripts(t *testing.T) {
 	origClient := newTextClient
 	t.Cleanup(func() { newTextClient = origClient })
 
 	fake := &fakeTextClient{
-		responses: append(makeSectionResponses(100), makeSectionResponses(800)...),
+		responses: makeSectionResponses(100),
 	}
 	newTextClient = func(apiKey string) (scriptClient, error) {
 		return fake, nil
@@ -120,8 +120,8 @@ func TestScriptRetriesOnLength(t *testing.T) {
 	if code := run([]string{"script", "--date=2025-09-30", "--topic=Retry Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
-	if fake.calls != 8 {
-		t.Fatalf("expected 8 AI calls, got %d", fake.calls)
+	if fake.calls != 4 {
+		t.Fatalf("expected 4 AI calls, got %d", fake.calls)
 	}
 }
 
