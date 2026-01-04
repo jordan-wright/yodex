@@ -17,8 +17,11 @@ import (
 )
 
 const (
-	retryMinWords = 650
+	retryMinWords     = 650
+	maxScriptAttempts = 2
 )
+
+var errScriptTooShort = errors.New("script length out of bounds")
 
 type scriptClient interface {
 	GenerateText(ctx context.Context, model, system, prompt string) (string, error)
@@ -98,9 +101,20 @@ func cmdScript(args []string) error {
 	}
 	slog.Info("prompts built")
 
-	episode, wordCount, usage, err := generateEpisode(ctx, client, cfg.TextModel, system, user, topicText)
-	if err != nil {
-		return err
+	var episode podcast.Episode
+	var wordCount int
+	var usage ai.TokenUsage
+	for attempt := 1; attempt <= maxScriptAttempts; attempt++ {
+		var attemptUsage ai.TokenUsage
+		episode, wordCount, attemptUsage, err = generateEpisode(ctx, client, cfg.TextModel, system, user, topicText)
+		usage = usage.Add(attemptUsage)
+		if err == nil {
+			break
+		}
+		if !errors.Is(err, errScriptTooShort) || attempt == maxScriptAttempts {
+			return err
+		}
+		slog.Warn("script length out of bounds; retrying", "attempt", attempt, "maxAttempts", maxScriptAttempts)
 	}
 	usage = usage.Add(topicUsage)
 
@@ -193,7 +207,7 @@ func generateEpisode(ctx context.Context, client scriptClient, model, system, ba
 		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}
 	if wordCount < retryMinWords {
-		return podcast.Episode{}, 0, ai.TokenUsage{}, errors.New("script length out of bounds")
+		return podcast.Episode{}, 0, usage, errScriptTooShort
 	}
 	return episode, wordCount, usage, nil
 }
