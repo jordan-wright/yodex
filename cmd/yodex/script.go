@@ -208,7 +208,7 @@ func generateEpisode(ctx context.Context, client scriptClient, model, system, ba
 		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}
 	if wordCount < retryMinWords {
-		return podcast.Episode{}, 0, ai.TokenUsage{}, errScriptTooShort
+		return podcast.Episode{}, 0, usage, errScriptTooShort
 	}
 	return episode, wordCount, usage, nil
 }
