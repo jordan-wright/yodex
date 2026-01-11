@@ -32,8 +32,8 @@ func cmdTopic(args []string) error {
 	if err != nil {
 		return err
 	}
-	envOv, apiKey := cfgpkg.FromEnv()
-	cfg := cfgpkg.Merge(fileCfg, envOv, cfgpkg.Overrides{}, apiKey)
+	envOv, apiKey, elevenLabsKey := cfgpkg.FromEnv()
+	cfg := cfgpkg.Merge(fileCfg, envOv, cfgpkg.Overrides{}, apiKey, elevenLabsKey)
 
 	var client ai.TextClient
 	if cfg.Topic == "" {
