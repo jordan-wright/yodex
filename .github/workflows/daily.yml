@@ -65,7 +65,10 @@ jobs:
 
       - name: Generate audio
         env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          YODEX_TTS_MODEL: ${{ vars.YODEX_TTS_MODEL }}
+          YODEX_VOICE: ${{ vars.YODEX_VOICE }}
         run: |
           go run ./cmd/yodex audio --date=${{ steps.date.outputs.value }}
 
@@ -81,13 +84,13 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION || 'us-west-2' }}
+          aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
 
       - name: Publish to S3
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
           AWS_S3_PREFIX: ${{ secrets.AWS_S3_PREFIX }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
         run: |
           go run ./cmd/yodex publish --date=${{ steps.date.outputs.value }} --include-script
 
