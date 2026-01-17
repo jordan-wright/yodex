@@ -67,6 +67,7 @@ jobs:
         env:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          YODEX_TTS_PROVIDER: ${{ vars.YODEX_TTS_PROVIDER }}
           YODEX_TTS_MODEL: ${{ vars.YODEX_TTS_MODEL }}
           YODEX_VOICE: ${{ vars.YODEX_VOICE }}
         run: |
