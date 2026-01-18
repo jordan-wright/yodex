@@ -27,6 +27,15 @@
 - [ ] Expanded TTS controls (style/pace) exposed via config/flags.
 - [ ] Code cleanup pass for any dead or unused paths.
 
+## Planned Feature: Brain Game Section (Pending)
+- [ ] Store game rules as markdown files under `internal/podcast/games/` (easy to add new games).
+- [ ] Add a game prompt builder in code (system prompt + rules + topic/date context).
+- [ ] Choose a game deterministically using the episode date as the seed.
+- [ ] Generate and store section outputs as separate files: `intro.md`, `topic.md`, `game.md`, `outro.md`.
+- [ ] Update audio pipeline to concatenate intro + topic + game + outro.
+- [ ] Add game intro music (S3 `music/game_intro.mp3`) in the workflow.
+- [ ] Tests: deterministic selection, rules loading, and section file outputs.
+
 ## Notes
 - Logging uses `slog` with JSON handler; CLI uses stdlib `flag`.
 - Defaults: text model `gpt-5-mini`, TTS model `gpt-4o-mini-tts`, voice `alloy`.

@@ -101,13 +101,24 @@ func cmdScript(args []string) error {
 	}
 	mdPath := builder.EpisodeMarkdown(date)
 	metaPath := builder.EpisodeMeta(date)
-	if err := paths.CheckOverwrite([]string{mdPath, metaPath}, cfg.Overwrite); err != nil {
+	sectionPaths := make([]string, 0, len(episode.Sections))
+	for _, section := range episode.Sections {
+		sectionPaths = append(sectionPaths, builder.EpisodeSectionMarkdown(date, section.SectionID))
+	}
+	pathsToCheck := append([]string{mdPath, metaPath}, sectionPaths...)
+	if err := paths.CheckOverwrite(pathsToCheck, cfg.Overwrite); err != nil {
 		return err
 	}
 
 	script := episode.RenderMarkdown()
 	if err := os.WriteFile(mdPath, []byte(script), 0o644); err != nil {
 		return err
+	}
+	for _, section := range episode.Sections {
+		path := builder.EpisodeSectionMarkdown(date, section.SectionID)
+		if err := os.WriteFile(path, []byte(strings.TrimSpace(section.Text)+"\n"), 0o644); err != nil {
+			return err
+		}
 	}
 
 	meta := scriptMeta{
@@ -142,7 +153,7 @@ func cmdScript(args []string) error {
 
 func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, model, system, basePrompt, topic string) (podcast.Episode, int, ai.TokenUsage, error) {
 	sections := podcast.StandardSectionSchema(topic, date)
-	episodeSections := make([]podcast.EpisodeSection, 0, len(sections))
+	episodeSections := make([]podcast.EpisodeSection, 0, len(sections)+1)
 	var usage ai.TokenUsage
 	var anchor string
 
@@ -168,9 +179,33 @@ func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, 
 		anchor = podcast.BuildContinuityAnchor(cleanText, spec.SectionID)
 	}
 
+	gameText, gameUsage, err := generateBrainGame(ctx, date, client, model, topic)
+	if err != nil {
+		return podcast.Episode{}, 0, ai.TokenUsage{}, err
+	}
+	usage = usage.Add(gameUsage)
+	inserted := false
+	ordered := make([]podcast.EpisodeSection, 0, len(episodeSections)+1)
+	for _, section := range episodeSections {
+		if section.SectionID == "outro" && !inserted {
+			ordered = append(ordered, podcast.EpisodeSection{
+				SectionID: "game",
+				Text:      gameText,
+			})
+			inserted = true
+		}
+		ordered = append(ordered, section)
+	}
+	if !inserted {
+		ordered = append(ordered, podcast.EpisodeSection{
+			SectionID: "game",
+			Text:      gameText,
+		})
+	}
+
 	episode := podcast.Episode{
 		Title:    topic,
-		Sections: episodeSections,
+		Sections: ordered,
 	}
 	slog.Info("validating episode fields")
 	if err := episode.Validate(); err != nil {
@@ -184,4 +219,28 @@ func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, 
 		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}
 	return episode, wordCount, usage, nil
+}
+
+func generateBrainGame(ctx context.Context, date time.Time, client ai.TextClient, model, topic string) (string, ai.TokenUsage, error) {
+	games, err := podcast.LoadGameRules()
+	if err != nil {
+		return "", ai.TokenUsage{}, err
+	}
+	game, err := podcast.ChooseGame(date, games)
+	if err != nil {
+		return "", ai.TokenUsage{}, err
+	}
+	system, user, err := podcast.BuildGamePrompt(topic, game)
+	if err != nil {
+		return "", ai.TokenUsage{}, err
+	}
+	slog.Info("generating brain game", "game", game.Name)
+	callStart := time.Now()
+	text, usage, err := client.GenerateTextWithUsage(ctx, model, system, user)
+	if err != nil {
+		slog.Error("brain game call failed", "game", game.Name, "elapsed", time.Since(callStart).String(), "err", err)
+		return "", ai.TokenUsage{}, err
+	}
+	slog.Info("brain game received", "game", game.Name, "elapsed", time.Since(callStart).String())
+	return strings.TrimSpace(text), usage, nil
 }

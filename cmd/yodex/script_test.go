@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -48,6 +49,7 @@ func TestScriptWritesOutputs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getwd: %v", err)
 	}
+	repoRoot := filepath.Dir(filepath.Dir(origWD))
 	tmp := t.TempDir()
 	if err := os.Chdir(tmp); err != nil {
 		t.Fatalf("chdir: %v", err)
@@ -55,6 +57,7 @@ func TestScriptWritesOutputs(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWD) })
 
 	t.Setenv("OPENAI_API_KEY", "sk-test")
+	t.Setenv("YODEX_GAME_RULES_DIR", filepath.Join(repoRoot, "internal", "podcast", "games"))
 	if code := run([]string{"script", "--date=2025-09-30", "--topic=Test Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
@@ -66,9 +69,25 @@ func TestScriptWritesOutputs(t *testing.T) {
 	builder := paths.New("")
 	mdPath := builder.EpisodeMarkdown(date)
 	metaPath := builder.EpisodeMeta(date)
+	introPath := builder.EpisodeSectionMarkdown(date, "intro")
+	topicPath := builder.EpisodeSectionMarkdown(date, "topic")
+	gamePath := builder.EpisodeSectionMarkdown(date, "game")
+	outroPath := builder.EpisodeSectionMarkdown(date, "outro")
 
 	if _, err := os.Stat(mdPath); err != nil {
 		t.Fatalf("missing episode.md: %v", err)
+	}
+	if _, err := os.Stat(introPath); err != nil {
+		t.Fatalf("missing intro.md: %v", err)
+	}
+	if _, err := os.Stat(topicPath); err != nil {
+		t.Fatalf("missing topic.md: %v", err)
+	}
+	if _, err := os.Stat(gamePath); err != nil {
+		t.Fatalf("missing game.md: %v", err)
+	}
+	if _, err := os.Stat(outroPath); err != nil {
+		t.Fatalf("missing outro.md: %v", err)
 	}
 	metaBytes, err := os.ReadFile(metaPath)
 	if err != nil {
@@ -101,6 +120,7 @@ func TestScriptAcceptsShorterScripts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getwd: %v", err)
 	}
+	repoRoot := filepath.Dir(filepath.Dir(origWD))
 	tmp := t.TempDir()
 	if err := os.Chdir(tmp); err != nil {
 		t.Fatalf("chdir: %v", err)
@@ -108,6 +128,7 @@ func TestScriptAcceptsShorterScripts(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWD) })
 
 	t.Setenv("OPENAI_API_KEY", "sk-test")
+	t.Setenv("YODEX_GAME_RULES_DIR", filepath.Join(repoRoot, "internal", "podcast", "games"))
 	if code := run([]string{"script", "--date=2025-09-30", "--topic=Retry Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
@@ -121,8 +142,8 @@ func makeSectionResponses(targetWords int) []string {
 		Title: "Test Title",
 		Sections: []podcast.EpisodeSection{
 			{SectionID: "intro", Text: "Intro text."},
-			{SectionID: "core-idea", Text: "Core idea text."},
-			{SectionID: "deep-dive", Text: ""},
+			{SectionID: "topic", Text: "Topic text."},
+			{SectionID: "game", Text: "Game text."},
 			{SectionID: "outro", Text: "Recap text. What did you learn?"},
 		},
 	}
@@ -135,8 +156,8 @@ func makeSectionResponses(targetWords int) []string {
 	return []string{
 		ep.Sections[0].Text,
 		ep.Sections[1].Text,
-		ep.Sections[2].Text,
 		ep.Sections[3].Text,
+		ep.Sections[2].Text,
 	}
 }
 

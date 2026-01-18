@@ -13,6 +13,8 @@ const (
 	defaultEpisodeFilename = "episode.md"
 	defaultMP3Filename     = "episode.mp3"
 	defaultMetaFilename    = "meta.json"
+	defaultSectionExt      = ".md"
+	defaultSectionMP3Ext   = ".mp3"
 )
 
 // Builder constructs output paths rooted at Base (default "out").
@@ -41,6 +43,14 @@ func (b *Builder) EpisodeMP3(t time.Time) string {
 }
 func (b *Builder) EpisodeMeta(t time.Time) string {
 	return filepath.Join(b.OutDir(t), defaultMetaFilename)
+}
+
+func (b *Builder) EpisodeSectionMarkdown(t time.Time, section string) string {
+	return filepath.Join(b.OutDir(t), section+defaultSectionExt)
+}
+
+func (b *Builder) EpisodeSectionMP3(t time.Time, section string) string {
+	return filepath.Join(b.OutDir(t), section+defaultSectionMP3Ext)
 }
 
 // EnsureOutDir creates the date-based directory if it does not exist.

@@ -10,9 +10,16 @@ const transitionPromptSuffix = "Continue as if you are finishing the previous th
 
 var standardSectionIDs = []string{
 	"intro",
-	"core-idea",
-	"deep-dive",
+	"topic",
+	"game",
 	"outro",
+}
+
+// StandardSectionIDs returns the ordered list of section IDs.
+func StandardSectionIDs() []string {
+	ids := make([]string, 0, len(standardSectionIDs))
+	ids = append(ids, standardSectionIDs...)
+	return ids
 }
 
 // SectionSpec defines the schema for a generated episode section.
@@ -38,13 +45,8 @@ func StandardSectionSchema(topic string, date time.Time) []SectionSpec {
 			TransitionInstructions: transitionPromptSuffix,
 		},
 		{
-			SectionID:              "core-idea",
-			Prompt:                 fmt.Sprintf("Explain the core idea about %q in a clear, curious voice. Use a relatable analogy and keep it 2-3 short paragraphs.", topic),
-			TransitionInstructions: transitionPromptSuffix,
-		},
-		{
-			SectionID:              "deep-dive",
-			Prompt:                 fmt.Sprintf("Take a deeper dive into %q, building on the previous segment. Include one surprising fact and keep it 2-3 short paragraphs.", topic),
+			SectionID:              "topic",
+			Prompt:                 buildTopicPrompt(topic),
 			TransitionInstructions: transitionPromptSuffix,
 		},
 		{
@@ -53,6 +55,10 @@ func StandardSectionSchema(topic string, date time.Time) []SectionSpec {
 			TransitionInstructions: transitionPromptSuffix,
 		},
 	}
+}
+
+func buildTopicPrompt(topic string) string {
+	return fmt.Sprintf("Explain the core idea about %q in a clear, curious voice, then add a deeper dive. Use relatable analogies and include one surprising fact. Keep it 4-6 short paragraphs total.", topic)
 }
 
 func buildIntroPrompt(topic string, date time.Time) string {
@@ -151,6 +157,10 @@ func sectionHeading(sectionID string) string {
 		return "Core Idea"
 	case "deep-dive":
 		return "Deep Dive"
+	case "topic":
+		return "Topic"
+	case "game":
+		return "Brain Game"
 	case "outro":
 		return "Outro"
 	default:

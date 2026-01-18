@@ -37,7 +37,7 @@ func SelectTopic(ctx context.Context, date time.Time, cfg config.Config, ai Text
 		return "", err
 	}
 	history = trimTopicHistory(history, cfg.TopicHistorySize)
-	prompt := buildTopicPrompt(recentTopics(history))
+	prompt := buildTopicHistoryPrompt(recentTopics(history))
 	text, err := ai.GenerateText(ctx, cfg.TextModel, topicSystemPrompt, prompt)
 	if err != nil {
 		return "", err
@@ -68,7 +68,7 @@ func SelectTopicWithUsage(ctx context.Context, date time.Time, cfg config.Config
 		return "", ai.TokenUsage{}, err
 	}
 	history = trimTopicHistory(history, cfg.TopicHistorySize)
-	prompt := buildTopicPrompt(recentTopics(history))
+	prompt := buildTopicHistoryPrompt(recentTopics(history))
 
 	if withUsage, ok := gen.(TextGeneratorWithUsage); ok {
 		text, usage, err := withUsage.GenerateTextWithUsage(ctx, cfg.TextModel, topicSystemPrompt, prompt)
@@ -103,7 +103,7 @@ func SelectTopicWithUsage(ctx context.Context, date time.Time, cfg config.Config
 	return topic, ai.TokenUsage{}, nil
 }
 
-func buildTopicPrompt(recent []string) string {
+func buildTopicHistoryPrompt(recent []string) string {
 	prompt := "Propose a single science topic for an advanced 7-year-old. " +
 		"Examples of topics: animals, cultural celebrations, science, astronomy, history, geography, physics, chemistry, biology, or nature. " +
 		"The topic should be interesting and engaging for a 7-year-old. " +

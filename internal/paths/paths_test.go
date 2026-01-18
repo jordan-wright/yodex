@@ -25,6 +25,12 @@ func TestOutPaths(t *testing.T) {
 	if b.EpisodeMeta(ts) != filepath.Join(wantDir, "meta.json") {
 		t.Fatalf("EpisodeMeta path incorrect")
 	}
+	if b.EpisodeSectionMarkdown(ts, "intro") != filepath.Join(wantDir, "intro.md") {
+		t.Fatalf("EpisodeSectionMarkdown path incorrect")
+	}
+	if b.EpisodeSectionMP3(ts, "intro") != filepath.Join(wantDir, "intro.mp3") {
+		t.Fatalf("EpisodeSectionMP3 path incorrect")
+	}
 }
 
 func TestEnsureOutDirAndOverwrite(t *testing.T) {

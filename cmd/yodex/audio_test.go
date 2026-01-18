@@ -52,20 +52,25 @@ func TestAudioWritesMP3(t *testing.T) {
 	if err := builder.EnsureOutDir(date); err != nil {
 		t.Fatalf("EnsureOutDir: %v", err)
 	}
-	mdPath := builder.EpisodeMarkdown(date)
-	if err := os.WriteFile(mdPath, []byte("Hello there.\n\nBye.\n"), 0o644); err != nil {
-		t.Fatalf("write episode.md: %v", err)
+	sectionData := map[string]string{
+		"intro": "Hello there.",
+		"topic": "Topic time.",
+		"game":  "Game time.",
+		"outro": "Bye.",
+	}
+	for section, text := range sectionData {
+		sectionPath := builder.EpisodeSectionMarkdown(date, section)
+		if err := os.WriteFile(sectionPath, []byte(text+"\n"), 0o644); err != nil {
+			t.Fatalf("write %s: %v", section, err)
+		}
 	}
 
 	t.Setenv("OPENAI_API_KEY", "sk-test")
 	if code := run([]string{"audio", "--date=2025-09-30", "--voice=alloy"}); code != 0 {
 		t.Fatalf("audio returned non-zero: %d", code)
 	}
-	if fake.calls != 1 {
-		t.Fatalf("expected 1 TTS call, got %d", fake.calls)
-	}
-	if fake.lastText != "Hello there.\n\nBye.\n" {
-		t.Fatalf("unexpected TTS input: %q", fake.lastText)
+	if fake.calls != 4 {
+		t.Fatalf("expected 4 TTS calls, got %d", fake.calls)
 	}
 
 	mp3Path := builder.EpisodeMP3(date)
@@ -73,7 +78,8 @@ func TestAudioWritesMP3(t *testing.T) {
 	if err != nil {
 		t.Fatalf("missing episode.mp3: %v", err)
 	}
-	if info.Size() == 0 {
-		t.Fatalf("episode.mp3 was empty")
+	expectedSize := int64(len("mp3bytes") * 4)
+	if info.Size() != expectedSize {
+		t.Fatalf("unexpected episode.mp3 size: %d", info.Size())
 	}
 }

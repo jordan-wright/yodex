@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -38,6 +39,7 @@ func TestScriptFlagParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getwd: %v", err)
 	}
+	repoRoot := filepath.Dir(filepath.Dir(origWD))
 	tmp := t.TempDir()
 	if err := os.Chdir(tmp); err != nil {
 		t.Fatalf("chdir: %v", err)
@@ -45,6 +47,7 @@ func TestScriptFlagParsing(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWD) })
 
 	t.Setenv("OPENAI_API_KEY", "sk-test")
+	t.Setenv("YODEX_GAME_RULES_DIR", filepath.Join(repoRoot, "internal", "podcast", "games"))
 	if code := run([]string{"script", "--date=2025-09-30", "--log-level=debug", "--topic=Test Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
