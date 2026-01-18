@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 
 	openai "github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -45,6 +46,7 @@ func (c *Client) GenerateText(ctx context.Context, model, system, prompt string)
 
 // GenerateTextWithUsage calls the Responses API and returns text and usage.
 func (c *Client) GenerateTextWithUsage(ctx context.Context, model, system, prompt string) (string, TokenUsage, error) {
+	slog.Debug("sending text prompt", "model", model, "system", system, "prompt", prompt)
 	req := responses.ResponseNewParams{
 		Model:        model,
 		Instructions: param.NewOpt(system),
@@ -65,6 +67,7 @@ func (c *Client) GenerateJSON(ctx context.Context, model, system, prompt, schema
 
 // GenerateJSONWithUsage calls the Responses API with a JSON schema format and returns raw JSON text and usage.
 func (c *Client) GenerateJSONWithUsage(ctx context.Context, model, system, prompt, schemaName string, schema map[string]any) (string, TokenUsage, error) {
+	slog.Debug("sending json prompt", "model", model, "system", system, "prompt", prompt, "schema", schemaName)
 	jsonSchema := responses.ResponseFormatTextJSONSchemaConfigParam{
 		Name:        schemaName,
 		Schema:      schema,
