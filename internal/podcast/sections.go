@@ -3,6 +3,7 @@ package podcast
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 const transitionPromptSuffix = "Continue as if you are finishing the previous thought, no headings, no resets."
@@ -29,11 +30,11 @@ type EpisodeSection struct {
 }
 
 // StandardSectionSchema returns the ordered section specs for an episode.
-func StandardSectionSchema(topic string) []SectionSpec {
+func StandardSectionSchema(topic string, date time.Time) []SectionSpec {
 	return []SectionSpec{
 		{
 			SectionID:              "intro",
-			Prompt:                 fmt.Sprintf("Write a warm, energetic intro for a kid-friendly science podcast about %q. Keep it 3-5 sentences and tease what's coming.", topic),
+			Prompt:                 buildIntroPrompt(topic, date),
 			TransitionInstructions: transitionPromptSuffix,
 		},
 		{
@@ -52,6 +53,21 @@ func StandardSectionSchema(topic string) []SectionSpec {
 			TransitionInstructions: transitionPromptSuffix,
 		},
 	}
+}
+
+func buildIntroPrompt(topic string, date time.Time) string {
+	dateLabel := date.UTC().Format("Monday, January 2, 2006")
+	dayPhrase := "day"
+	switch date.UTC().Weekday() {
+	case time.Saturday, time.Sunday:
+		dayPhrase = "weekend"
+	}
+	return fmt.Sprintf(
+		"Write a warm, friendly podcast welcome for kids. Mention today's date (%s) and say you hope everyone is having a wonderful %s. Keep it 3-5 sentences, upbeat, and welcoming. Do not dive into the topic yet; just tease that you'll explore %q soon.",
+		dateLabel,
+		dayPhrase,
+		topic,
+	)
 }
 
 // BuildSectionPrompt builds the user prompt for a single section.

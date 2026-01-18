@@ -89,7 +89,7 @@ func cmdScript(args []string) error {
 	}
 	slog.Info("prompts built")
 
-	episode, wordCount, usage, err := generateEpisode(ctx, client, cfg.TextModel, system, user, topicText)
+	episode, wordCount, usage, err := generateEpisode(ctx, date, client, cfg.TextModel, system, user, topicText)
 	if err != nil {
 		return err
 	}
@@ -140,8 +140,8 @@ func cmdScript(args []string) error {
 	return nil
 }
 
-func generateEpisode(ctx context.Context, client ai.TextClient, model, system, basePrompt, topic string) (podcast.Episode, int, ai.TokenUsage, error) {
-	sections := podcast.StandardSectionSchema(topic)
+func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, model, system, basePrompt, topic string) (podcast.Episode, int, ai.TokenUsage, error) {
+	sections := podcast.StandardSectionSchema(topic, date)
 	episodeSections := make([]podcast.EpisodeSection, 0, len(sections))
 	var usage ai.TokenUsage
 	var anchor string
