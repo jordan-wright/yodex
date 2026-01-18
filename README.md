@@ -1,0 +1,109 @@
+# Yodex
+
+Yodex generates a short, kid-friendly science podcast episode, then optionally
+uploads the MP3 (and script) to S3. It is a small Go CLI with a daily GitHub
+Actions workflow.
+
+## Commands
+
+- `yodex script` generates `episode.md` and `meta.json`.
+- `yodex audio` reads `episode.md` and generates `episode.mp3`.
+- `yodex publish` uploads artifacts to S3 and copies to `latest/` keys.
+- `yodex topic` prints a proposed topic (or uses config override).
+- `yodex all` runs script -> audio -> publish in sequence.
+
+## Local usage
+
+Generate a script:
+```bash
+OPENAI_API_KEY=... go run ./cmd/yodex script --date=YYYY-MM-DD
+```
+
+Generate audio (OpenAI TTS):
+```bash
+export OPENAI_API_KEY=...
+export YODEX_TTS_PROVIDER=openai
+export YODEX_TTS_MODEL=gpt-4o-mini-tts
+export YODEX_VOICE=alloy
+
+go run ./cmd/yodex audio --date=YYYY-MM-DD
+```
+
+Generate audio (ElevenLabs TTS):
+```bash
+export ELEVENLABS_API_KEY=el-...
+export YODEX_TTS_PROVIDER=elevenlabs
+export YODEX_TTS_MODEL=eleven_multilingual_v2
+export YODEX_VOICE=your-voice-id
+
+go run ./cmd/yodex audio --date=YYYY-MM-DD
+```
+
+Publish to S3:
+```bash
+export AWS_S3_BUCKET=...
+export AWS_S3_PREFIX=yodex
+export AWS_REGION=us-west-2
+
+go run ./cmd/yodex publish --date=YYYY-MM-DD --include-script
+```
+
+Outputs land under `out/YYYY/MM/DD/`.
+
+## Configuration
+
+Optional `config.json` at repo root:
+```json
+{
+  "topic": "The Secret Life of Honeybees",
+  "voice": "alloy",
+  "s3Bucket": "my-yodex-bucket",
+  "s3Prefix": "yodex",
+  "region": "us-west-2",
+  "debug": false,
+  "overwrite": false,
+  "textModel": "gpt-5-mini",
+  "ttsModel": "gpt-4o-mini-tts",
+  "ttsProvider": "openai",
+  "topicHistorySize": 10,
+  "topicHistoryS3Prefix": "yodex"
+}
+```
+
+Env vars override config (flags override both):
+- `OPENAI_API_KEY` (script and OpenAI TTS)
+- `ELEVENLABS_API_KEY` (ElevenLabs TTS)
+- `YODEX_TTS_PROVIDER` (`openai` or `elevenlabs`)
+- `YODEX_TTS_MODEL`, `YODEX_VOICE`, `YODEX_TEXT_MODEL`
+- `YODEX_DEBUG`, `YODEX_OVERWRITE`
+- `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_S3_PREFIX`
+- `YODEX_TOPIC_HISTORY_SIZE`, `YODEX_TOPIC_HISTORY_S3_PREFIX`
+
+## GitHub Actions configuration
+
+Workflow: `.github/workflows/daily.yml`.
+
+Repo variables:
+- `YODEX_TTS_PROVIDER`
+- `YODEX_TTS_MODEL`
+- `YODEX_VOICE`
+- `AWS_REGION`
+
+Repo secrets:
+- `OPENAI_API_KEY`
+- `ELEVENLABS_API_KEY` (only needed for ElevenLabs)
+- `AWS_ROLE_ARN`
+- `AWS_S3_BUCKET`
+- `AWS_S3_PREFIX`
+
+## Tests
+
+```bash
+go test ./...
+```
+
+## Notes for agents
+
+- Code style: idiomatic, boring Go with stdlib first.
+- Keep changes focused and easy to review.
+- Terraform lives in `terraform/`.
