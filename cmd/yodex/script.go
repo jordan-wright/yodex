@@ -230,7 +230,7 @@ func generateBrainGame(ctx context.Context, date time.Time, client ai.TextClient
 	if err != nil {
 		return "", ai.TokenUsage{}, err
 	}
-	system, user, err := podcast.BuildGamePrompt(topic, game)
+	system, user, err := podcast.BuildGamePrompt(topic, date, game)
 	if err != nil {
 		return "", ai.TokenUsage{}, err
 	}

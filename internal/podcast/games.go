@@ -3,9 +3,9 @@ package podcast
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -48,6 +48,9 @@ func LoadGameRules() ([]GameRules, error) {
 	if len(games) == 0 {
 		return nil, errors.New("no game rules found")
 	}
+	sort.Slice(games, func(i, j int) bool {
+		return games[i].Name < games[j].Name
+	})
 	return games, nil
 }
 
@@ -62,14 +65,8 @@ func ChooseGame(date time.Time, games []GameRules) (GameRules, error) {
 	if len(games) == 0 {
 		return GameRules{}, errors.New("no games available")
 	}
-	seed := dateSeed(date)
-	rng := rand.New(rand.NewSource(seed))
-	return games[rng.Intn(len(games))], nil
-}
-
-func dateSeed(date time.Time) int64 {
-	utc := date.UTC()
-	return int64(utc.Year()*10000 + int(utc.Month())*100 + utc.Day())
+	index := int(date.UTC().Weekday()) % len(games)
+	return games[index], nil
 }
 
 const gameSystemPrompt = "You are a friendly, curious podcast host creating an audio-only daily game for kids ages 7–9.\n\n" +
@@ -96,7 +93,7 @@ const gameSystemPrompt = "You are a friendly, curious podcast host creating an a
 	"- End the game with a positive closing line (e.g., encouragement or fun fact).\n\n" +
 	"Now generate the game round using the provided rules."
 
-func BuildGamePrompt(topic string, rules GameRules) (string, string, error) {
+func BuildGamePrompt(topic string, date time.Time, rules GameRules) (string, string, error) {
 	topic = strings.TrimSpace(topic)
 	if topic == "" {
 		return "", "", errors.New("topic is required")
@@ -104,9 +101,13 @@ func BuildGamePrompt(topic string, rules GameRules) (string, string, error) {
 	if strings.TrimSpace(rules.Rules) == "" {
 		return "", "", errors.New("game rules are required")
 	}
+	weekday := date.UTC().Weekday().String()
 	user := fmt.Sprintf(
-		"Topic: %s\nGame: %s\n\nGame rules:\n%s",
+		"Weekday: %s\nTopic: %s\nGame: %s\n\nStart the game by saying: \"It's %s so you know what that means! It's time to play %s.\".\n\nGame rules:\n%s",
+		weekday,
 		topic,
+		rules.Name,
+		weekday,
 		rules.Name,
 		rules.Rules,
 	)

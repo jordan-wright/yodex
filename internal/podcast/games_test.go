@@ -38,7 +38,7 @@ func TestChooseGameDeterministic(t *testing.T) {
 		{Name: "b", Rules: "b"},
 		{Name: "c", Rules: "c"},
 	}
-	date := time.Date(2026, 1, 19, 0, 0, 0, 0, time.UTC)
+	date := time.Date(2026, 1, 19, 0, 0, 0, 0, time.UTC) // Monday
 	first, err := ChooseGame(date, games)
 	if err != nil {
 		t.Fatalf("ChooseGame: %v", err)
@@ -50,17 +50,21 @@ func TestChooseGameDeterministic(t *testing.T) {
 	if first.Name != second.Name {
 		t.Fatalf("expected deterministic selection, got %q and %q", first.Name, second.Name)
 	}
+	if first.Name != games[int(date.Weekday())%len(games)].Name {
+		t.Fatalf("unexpected weekday selection: %q", first.Name)
+	}
 }
 
 func TestBuildGamePrompt(t *testing.T) {
-	system, user, err := BuildGamePrompt("Space", GameRules{Name: "mystery", Rules: "Rule"})
+	date := time.Date(2026, 1, 19, 0, 0, 0, 0, time.UTC) // Monday
+	system, user, err := BuildGamePrompt("Space", date, GameRules{Name: "mystery", Rules: "Rule"})
 	if err != nil {
 		t.Fatalf("BuildGamePrompt: %v", err)
 	}
 	if system == "" || user == "" {
 		t.Fatalf("expected prompts to be set")
 	}
-	if !containsAll(user, []string{"Topic: Space", "Game: mystery", "Rule"}) {
+	if !containsAll(user, []string{"Weekday: Monday", "Topic: Space", "Game: mystery", "Rule"}) {
 		t.Fatalf("missing rules in prompt: %q", user)
 	}
 }
