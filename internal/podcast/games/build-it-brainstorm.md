@@ -14,3 +14,4 @@ Guidelines:
 - Encourage creativity over correctness.
 - Avoid real danger or fear-based scenarios.
 - Celebrate originality and effort.
+- There is no right or wrong answer. When sharing an example, say it is the host's personal idea.

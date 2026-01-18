@@ -14,3 +14,4 @@ Guidelines:
 - Keep scenarios playful and age-appropriate.
 - Avoid scary or stressful outcomes.
 - Encourage imagination and curiosity.
+- There is no right or wrong answer. If the host mentions a preference, frame it as their personal pick.
