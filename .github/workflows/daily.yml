@@ -82,6 +82,21 @@ jobs:
         run: |
           go run ./cmd/yodex audio --date=${{ steps.date.outputs.value }}
 
+      - name: Add intro music
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+        run: |
+          INTRO_PATH="$(mktemp -t yodex-intro-XXXXXX.mp3)"
+          OUT_DIR="out/${{ steps.date.outputs.path }}"
+          aws s3 cp "s3://${AWS_S3_BUCKET}/music/intro.mp3" "${INTRO_PATH}"
+          ffmpeg -hide_banner -loglevel error -y \
+            -i "${INTRO_PATH}" \
+            -i "${OUT_DIR}/episode.mp3" \
+            -filter_complex "[0:a][1:a]concat=n=2:v=0:a=1[full]" \
+            -map "[full]" \
+            "${OUT_DIR}/episode.with-intro.mp3"
+          mv "${OUT_DIR}/episode.with-intro.mp3" "${OUT_DIR}/episode.mp3"
+
       - name: Upload audio artifact
         if: ${{ inputs.debug }}
         uses: actions/upload-artifact@v4
