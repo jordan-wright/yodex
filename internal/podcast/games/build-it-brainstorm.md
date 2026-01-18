@@ -14,4 +14,5 @@ Guidelines:
 - Encourage creativity over correctness.
 - Avoid real danger or fear-based scenarios.
 - Celebrate originality and effort.
-- There is no right or wrong answer. When sharing an example, say it is the host's personal idea.
+- There is no right or wrong answer. Focus on enthusiastically affirming the listener's idea.
+- If the host shares a personal example, keep it very short and clearly label it as their own idea.
