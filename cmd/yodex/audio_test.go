@@ -53,7 +53,7 @@ func TestAudioWritesMP3(t *testing.T) {
 		t.Fatalf("EnsureOutDir: %v", err)
 	}
 	mdPath := builder.EpisodeMarkdown(date)
-	if err := os.WriteFile(mdPath, []byte("hello script"), 0o644); err != nil {
+	if err := os.WriteFile(mdPath, []byte("Hello there.\n\nBye.\n"), 0o644); err != nil {
 		t.Fatalf("write episode.md: %v", err)
 	}
 
@@ -63,6 +63,9 @@ func TestAudioWritesMP3(t *testing.T) {
 	}
 	if fake.calls != 1 {
 		t.Fatalf("expected 1 TTS call, got %d", fake.calls)
+	}
+	if fake.lastText != "Hello there.\n\nBye.\n" {
+		t.Fatalf("unexpected TTS input: %q", fake.lastText)
 	}
 
 	mp3Path := builder.EpisodeMP3(date)

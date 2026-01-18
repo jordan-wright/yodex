@@ -79,16 +79,21 @@ func ParseEpisodeJSON(raw string) (Episode, error) {
 	return ep, nil
 }
 
-// RenderMarkdown returns a Markdown script for the episode.
+// RenderMarkdown returns the script text without section headings.
 func (e Episode) RenderMarkdown() string {
 	var b strings.Builder
-	b.WriteString("# ")
-	b.WriteString(strings.TrimSpace(e.Title))
 	for _, section := range e.Sections {
-		b.WriteString("\n\n## ")
-		b.WriteString(sectionHeading(section.SectionID))
-		b.WriteString("\n\n")
-		b.WriteString(strings.TrimSpace(section.Text))
+		trimmed := strings.TrimSpace(section.Text)
+		if trimmed == "" {
+			continue
+		}
+		if b.Len() > 0 {
+			b.WriteString("\n\n")
+		}
+		b.WriteString(trimmed)
+	}
+	if b.Len() == 0 {
+		return ""
 	}
 	b.WriteString("\n")
 	return b.String()
