@@ -79,7 +79,7 @@ func buildIntroPrompt(topic string, date time.Time) string {
 func buildOutroPrompt(topic string, date time.Time) string {
 	dateLabel := date.UTC().Format("Monday, January 2")
 	return fmt.Sprintf(
-		"Wrap up the episode about %q with a friendly recap and a thoughtful question for listeners. Mention today's date (%s) and say Jessica hopes everyone has an amazing day and learns something new. Keep it 3-5 sentences.",
+		"Wrap up the episode about %q with a friendly recap and a thoughtful question for listeners. Use first-person voice as Jessica. Instead of a mechanical date callout, weave it into a warm wish like: \"I hope everyone has an amazing %s.\" Keep it 3-5 sentences.",
 		topic,
 		dateLabel,
 	)
