@@ -30,6 +30,7 @@ func BuildScriptPrompts(topic string) (string, string, error) {
 	b.WriteString("Each request is for one section of the episode. ")
 	b.WriteString("Write in a friendly narrator voice, no headings or labels. ")
 	b.WriteString("Sprinkle occasional short inflection tags like [laughing], [excited], or [sarcastic] to add energy. ")
+	b.WriteString("Place tags at the start of the line or sentence where they apply (e.g., before a punchline), not at the end. ")
 	b.WriteString("Keep tags brief, natural, and kid-appropriate. ")
 	b.WriteString("Keep it upbeat, kid-safe, accurate, and easy to follow. Avoid unsafe instructions.")
 	user := b.String()

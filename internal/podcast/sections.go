@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const transitionPromptSuffix = "Continue as if you are finishing the previous thought, no headings, no resets."
+const transitionPromptSuffix = "Continue as if you are finishing the previous thought, no headings, no resets. Do not repeat the greeting or date."
 
 var standardSectionIDs = []string{
 	"intro",
