@@ -31,7 +31,10 @@ func BuildScriptPrompts(topic string) (string, string, error) {
 	b.WriteString("Write in a friendly narrator voice, no headings or labels. ")
 	b.WriteString("Sprinkle occasional short inflection tags like [laughing], [excited], or [sarcastic] to add energy. ")
 	b.WriteString("Place tags at the start of the line or sentence where they apply (e.g., before a punchline), not at the end. ")
-	b.WriteString("Keep tags brief, natural, and kid-appropriate. ")
+	b.WriteString("Use a mix of upbeat emotional tags (e.g., [happy], [excited], [thoughtful]) and light non-verbal tags (e.g., [laughing], [chuckles], [short pause]). ")
+	b.WriteString("Avoid negative, tired, or bored tags; only use voice-related tags (no music or sound effects). ")
+	b.WriteString("Examples: \"[excited] We have a cool mystery today!\" \"[joking] Why did the comet bring a suitcase?\" \"[laughing] Because it was going on a long trip!\" ")
+	b.WriteString("Keep tags brief, natural, and kid-appropriate, and never let a tag change the meaning of the sentence. ")
 	b.WriteString("Keep it upbeat, kid-safe, accurate, and easy to follow. Avoid unsafe instructions.")
 	user := b.String()
 	return systemPrompt, user, nil
