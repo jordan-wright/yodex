@@ -63,7 +63,7 @@ func buildIntroPrompt(topic string, date time.Time) string {
 		dayPhrase = "weekend"
 	}
 	return fmt.Sprintf(
-		"Write a warm, friendly podcast welcome for kids. Mention today's date (%s) and say you hope everyone is having a wonderful %s. Keep it 3-5 sentences, upbeat, and welcoming. Do not dive into the topic yet; just tease that you'll explore %q soon.",
+		"Write a warm, friendly podcast welcome for kids. Greet listeners to the \"Curious Kids Podcast\" and introduce the host, Jessica. Mention today's date (%s) and say you hope everyone is having a wonderful %s. Keep it 3-5 sentences, upbeat, and welcoming. Do not dive into the topic yet; just tease that you'll explore %q soon.",
 		dateLabel,
 		dayPhrase,
 		topic,
@@ -73,7 +73,7 @@ func buildIntroPrompt(topic string, date time.Time) string {
 func buildOutroPrompt(topic string, date time.Time) string {
 	dateLabel := date.UTC().Format("Monday, January 2")
 	return fmt.Sprintf(
-		"Wrap up the episode about %q with a friendly recap and a thoughtful question for listeners. Mention today's date (%s) and say you hope everyone has an amazing day and learns something new. Keep it 3-5 sentences.",
+		"Wrap up the episode about %q with a friendly recap and a thoughtful question for listeners. Mention today's date (%s) and say Jessica hopes everyone has an amazing day and learns something new. Keep it 3-5 sentences.",
 		topic,
 		dateLabel,
 	)
