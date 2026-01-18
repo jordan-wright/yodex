@@ -106,7 +106,7 @@ func BuildGamePrompt(topic string, date time.Time, rules GameRules) (string, str
 	}
 	weekday := date.UTC().Weekday().String()
 	user := fmt.Sprintf(
-		"Weekday: %s\nTopic: %s\nGame: %s\n\nStart the game by saying: \"It's %s so you know what that means! It's time to play %s.\".\n\nGame rules:\n%s",
+		"Weekday: %s\nTopic: %s\nGame: %s\n\nStart the game by saying: It's %s so you know what that means! It's time to play %s.\nThen give a short, friendly summary of how the game works that makes expectations clear.\n\nGame rules:\n%s",
 		weekday,
 		topic,
 		rules.Name,

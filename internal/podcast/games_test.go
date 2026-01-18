@@ -64,7 +64,7 @@ func TestBuildGamePrompt(t *testing.T) {
 	if system == "" || user == "" {
 		t.Fatalf("expected prompts to be set")
 	}
-	if !containsAll(user, []string{"Weekday: Monday", "Topic: Space", "Game: mystery", "Rule"}) {
+	if !containsAll(user, []string{"Weekday: Monday", "Topic: Space", "Game: mystery", "Then give a short, friendly summary", "Game rules:\nRule"}) {
 		t.Fatalf("missing rules in prompt: %q", user)
 	}
 }
