@@ -27,7 +27,7 @@ generation and OpenAI TTS.
 - Topic selection:
   - Use `config.json` topic if present.
   - Else, use OpenAI to propose a topic appropriate for an advanced 7-year-old.
-  - Optionally track recent topics in S3 to avoid repeats.
+  - Track recent topics in S3 (when configured) or a local JSON file.
 - Script generation:
   - Generate sections for intro, core idea, deep dive, and outro.
   - Save Markdown and metadata.
@@ -127,7 +127,7 @@ generation and OpenAI TTS.
   "ttsModel": "gpt-4o-mini-tts",
   "ttsProvider": "openai",
   "topicHistorySize": 10,
-  "topicHistoryS3Prefix": "yodex"
+  "topicHistoryPath": "out/topic-history.json"
 }
 ```
 - Env vars override config:
@@ -136,7 +136,7 @@ generation and OpenAI TTS.
   - `YODEX_TTS_PROVIDER`, `YODEX_TTS_MODEL`, `YODEX_TEXT_MODEL`, `YODEX_VOICE`
   - `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_S3_PREFIX`
   - `YODEX_DEBUG`, `YODEX_OVERWRITE`
-  - `YODEX_TOPIC_HISTORY_SIZE`, `YODEX_TOPIC_HISTORY_S3_PREFIX`
+  - `YODEX_TOPIC_HISTORY_SIZE`, `YODEX_TOPIC_HISTORY_PATH`
 - Flags override env/config.
 
 ---

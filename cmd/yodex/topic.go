@@ -27,6 +27,10 @@ func cmdTopic(args []string) error {
 		return err
 	}
 	setupLogger(cf.logLevel)
+	date, err := resolveDate(cf.date)
+	if err != nil {
+		return err
+	}
 
 	fileCfg, err := cfgpkg.LoadFile(cf.config)
 	if err != nil {
@@ -49,7 +53,7 @@ func cmdTopic(args []string) error {
 		}
 	}
 
-	topic, err := podcast.SelectTopic(context.Background(), cfg, client)
+	topic, err := podcast.SelectTopic(context.Background(), date, cfg, client)
 	if err != nil {
 		return err
 	}

@@ -78,7 +78,7 @@ func cmdScript(args []string) error {
 
 	slog.Info("script start", "date", date.Format("2006-01-02"), "model", cfg.TextModel)
 	slog.Info("selecting topic")
-	topicText, topicUsage, err := podcast.SelectTopicWithUsage(ctx, cfg, client)
+	topicText, topicUsage, err := podcast.SelectTopicWithUsage(ctx, date, cfg, client)
 	if err != nil {
 		return err
 	}

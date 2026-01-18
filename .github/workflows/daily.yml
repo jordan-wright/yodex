@@ -46,8 +46,17 @@ jobs:
           echo "value=${DATE_VAL}" >> "$GITHUB_OUTPUT"
           echo "path=$(date -u -d "${DATE_VAL}" +%Y/%m/%d)" >> "$GITHUB_OUTPUT"
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
+
       - name: Generate script
         env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_S3_PREFIX: ${{ secrets.AWS_S3_PREFIX }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           go run ./cmd/yodex script --date=${{ steps.date.outputs.value }}
@@ -80,12 +89,6 @@ jobs:
           name: audio-${{ steps.date.outputs.value }}
           path: out/${{ steps.date.outputs.path }}/episode.mp3
           if-no-files-found: warn
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
 
       - name: Publish to S3
         env:

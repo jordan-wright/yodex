@@ -56,7 +56,7 @@ func TestSelectTopicUsesConfig(t *testing.T) {
 	cfg.Topic = "Configured Topic"
 
 	gen := &fakeTextGen{text: "Generated Topic"}
-	topic, err := SelectTopic(context.Background(), cfg, gen)
+	topic, err := SelectTopic(context.Background(), time.Date(2026, 1, 17, 0, 0, 0, 0, time.UTC), cfg, gen)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestSelectTopicUsesConfig(t *testing.T) {
 func TestSelectTopicGenerates(t *testing.T) {
 	cfg := config.Default()
 	gen := &fakeTextGen{text: "Ocean Wonders\n"}
-	topic, err := SelectTopic(context.Background(), cfg, gen)
+	topic, err := SelectTopic(context.Background(), time.Date(2026, 1, 17, 0, 0, 0, 0, time.UTC), cfg, gen)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -85,9 +85,9 @@ func TestSelectTopicGenerates(t *testing.T) {
 
 func TestSelectTopicIncludesHistoryInPrompt(t *testing.T) {
 	history := TopicHistory{
-		Entries: []TopicHistoryEntry{
-			{Topic: "Ocean Life", PublishedAt: time.Now().Add(-48 * time.Hour)},
-			{Topic: "Volcanoes", PublishedAt: time.Now().Add(-24 * time.Hour)},
+		Entries: map[string]TopicHistoryEntry{
+			"2026-01-15": {Topic: "Ocean Life"},
+			"2026-01-16": {Topic: "Volcanoes"},
 		},
 	}
 	data, err := json.Marshal(history)
@@ -96,10 +96,11 @@ func TestSelectTopicIncludesHistoryInPrompt(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.TopicHistoryS3Prefix = "topic-history"
+	cfg.S3Bucket = "topic-history-bucket"
+	cfg.S3Prefix = "yodex"
 	cfg.TopicHistorySize = 3
 	fakeStore := &fakeTopicHistoryStore{
-		prefix:       cfg.TopicHistoryS3Prefix,
+		prefix:       cfg.S3Prefix,
 		downloadData: data,
 	}
 	newTopicHistoryStore = func(ctx context.Context, cfg config.Config) (topicHistoryStore, error) {
@@ -107,11 +108,11 @@ func TestSelectTopicIncludesHistoryInPrompt(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		newTopicHistoryStore = func(ctx context.Context, cfg config.Config) (topicHistoryStore, error) {
-			return storage.New(ctx, cfg.S3Bucket, cfg.TopicHistoryS3Prefix, cfg.Region)
+			return storage.New(ctx, cfg.S3Bucket, cfg.S3Prefix, cfg.Region)
 		}
 	})
 	gen := &fakeTextGen{text: "Space Weather"}
-	if _, err := SelectTopic(context.Background(), cfg, gen); err != nil {
+	if _, err := SelectTopic(context.Background(), time.Date(2026, 1, 17, 0, 0, 0, 0, time.UTC), cfg, gen); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -125,10 +126,11 @@ func TestSelectTopicIncludesHistoryInPrompt(t *testing.T) {
 
 func TestSelectTopicEmptyHistory(t *testing.T) {
 	cfg := config.Default()
-	cfg.TopicHistoryS3Prefix = "topic-history"
+	cfg.S3Bucket = "topic-history-bucket"
+	cfg.S3Prefix = "yodex"
 	cfg.TopicHistorySize = 3
 	fakeStore := &fakeTopicHistoryStore{
-		prefix:      cfg.TopicHistoryS3Prefix,
+		prefix:      cfg.S3Prefix,
 		downloadErr: &types.NoSuchKey{},
 	}
 	newTopicHistoryStore = func(ctx context.Context, cfg config.Config) (topicHistoryStore, error) {
@@ -136,11 +138,11 @@ func TestSelectTopicEmptyHistory(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		newTopicHistoryStore = func(ctx context.Context, cfg config.Config) (topicHistoryStore, error) {
-			return storage.New(ctx, cfg.S3Bucket, cfg.TopicHistoryS3Prefix, cfg.Region)
+			return storage.New(ctx, cfg.S3Bucket, cfg.S3Prefix, cfg.Region)
 		}
 	})
 	gen := &fakeTextGen{text: "Desert Animals"}
-	if _, err := SelectTopic(context.Background(), cfg, gen); err != nil {
+	if _, err := SelectTopic(context.Background(), time.Date(2026, 1, 17, 0, 0, 0, 0, time.UTC), cfg, gen); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -151,10 +153,10 @@ func TestSelectTopicEmptyHistory(t *testing.T) {
 
 func TestSelectTopicHistoryTruncation(t *testing.T) {
 	history := TopicHistory{
-		Entries: []TopicHistoryEntry{
-			{Topic: "Rainforests", PublishedAt: time.Now().Add(-72 * time.Hour)},
-			{Topic: "Dinosaurs", PublishedAt: time.Now().Add(-48 * time.Hour)},
-			{Topic: "Gravity", PublishedAt: time.Now().Add(-24 * time.Hour)},
+		Entries: map[string]TopicHistoryEntry{
+			"2026-01-10": {Topic: "Rainforests"},
+			"2026-01-11": {Topic: "Dinosaurs"},
+			"2026-01-12": {Topic: "Gravity"},
 		},
 	}
 	data, err := json.Marshal(history)
@@ -163,10 +165,11 @@ func TestSelectTopicHistoryTruncation(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.TopicHistoryS3Prefix = "topic-history"
+	cfg.S3Bucket = "topic-history-bucket"
+	cfg.S3Prefix = "yodex"
 	cfg.TopicHistorySize = 2
 	fakeStore := &fakeTopicHistoryStore{
-		prefix:       cfg.TopicHistoryS3Prefix,
+		prefix:       cfg.S3Prefix,
 		downloadData: data,
 	}
 	newTopicHistoryStore = func(ctx context.Context, cfg config.Config) (topicHistoryStore, error) {
@@ -174,18 +177,18 @@ func TestSelectTopicHistoryTruncation(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		newTopicHistoryStore = func(ctx context.Context, cfg config.Config) (topicHistoryStore, error) {
-			return storage.New(ctx, cfg.S3Bucket, cfg.TopicHistoryS3Prefix, cfg.Region)
+			return storage.New(ctx, cfg.S3Bucket, cfg.S3Prefix, cfg.Region)
 		}
 	})
 	gen := &fakeTextGen{text: "Coral Reefs"}
-	if _, err := SelectTopic(context.Background(), cfg, gen); err != nil {
+	if _, err := SelectTopic(context.Background(), time.Date(2026, 1, 17, 0, 0, 0, 0, time.UTC), cfg, gen); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if strings.Contains(gen.prompt, "- Gravity") {
+	if strings.Contains(gen.prompt, "- Rainforests") {
 		t.Fatalf("expected prompt to truncate history, got %q", gen.prompt)
 	}
-	if !strings.Contains(gen.prompt, "- Rainforests") || !strings.Contains(gen.prompt, "- Dinosaurs") {
+	if !strings.Contains(gen.prompt, "- Gravity") || !strings.Contains(gen.prompt, "- Dinosaurs") {
 		t.Fatalf("expected prompt to include latest history items, got %q", gen.prompt)
 	}
 }

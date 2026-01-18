@@ -12,19 +12,18 @@ import (
 
 // Config holds resolved configuration values after merging file, env, and flags.
 type Config struct {
-	Topic                string `json:"topic,omitempty"`
-	Voice                string `json:"voice,omitempty"`
-	S3Bucket             string `json:"s3Bucket,omitempty"`
-	S3Prefix             string `json:"s3Prefix,omitempty"`
-	Region               string `json:"region,omitempty"`
-	Debug                bool   `json:"debug,omitempty"`
-	Overwrite            bool   `json:"overwrite,omitempty"`
-	TextModel            string `json:"textModel,omitempty"`
-	TTSModel             string `json:"ttsModel,omitempty"`
-	TTSProvider          string `json:"ttsProvider,omitempty"`
-	TopicHistorySize     int    `json:"topicHistorySize,omitempty"`
-	TopicHistoryPath     string `json:"topicHistoryPath,omitempty"`
-	TopicHistoryS3Prefix string `json:"topicHistoryS3Prefix,omitempty"`
+	Topic            string `json:"topic,omitempty"`
+	Voice            string `json:"voice,omitempty"`
+	S3Bucket         string `json:"s3Bucket,omitempty"`
+	S3Prefix         string `json:"s3Prefix,omitempty"`
+	Region           string `json:"region,omitempty"`
+	Debug            bool   `json:"debug,omitempty"`
+	Overwrite        bool   `json:"overwrite,omitempty"`
+	TextModel        string `json:"textModel,omitempty"`
+	TTSModel         string `json:"ttsModel,omitempty"`
+	TTSProvider      string `json:"ttsProvider,omitempty"`
+	TopicHistorySize int    `json:"topicHistorySize,omitempty"`
+	TopicHistoryPath string `json:"topicHistoryPath,omitempty"`
 
 	// Not persisted to file; sourced from env only.
 	OpenAIAPIKey     string `json:"-"`
@@ -34,19 +33,18 @@ type Config struct {
 // Overrides represents optional overrides from env or flags.
 // Only non-nil pointers are applied during merge.
 type Overrides struct {
-	Topic                *string
-	Voice                *string
-	S3Bucket             *string
-	S3Prefix             *string
-	Region               *string
-	Debug                *bool
-	Overwrite            *bool
-	TextModel            *string
-	TTSModel             *string
-	TTSProvider          *string
-	TopicHistorySize     *int
-	TopicHistoryPath     *string
-	TopicHistoryS3Prefix *string
+	Topic            *string
+	Voice            *string
+	S3Bucket         *string
+	S3Prefix         *string
+	Region           *string
+	Debug            *bool
+	Overwrite        *bool
+	TextModel        *string
+	TTSModel         *string
+	TTSProvider      *string
+	TopicHistorySize *int
+	TopicHistoryPath *string
 }
 
 func Default() Config {
@@ -126,9 +124,6 @@ func FromEnv() (Overrides, string, string) {
 	if v, ok := os.LookupEnv("YODEX_TOPIC_HISTORY_PATH"); ok {
 		ov.TopicHistoryPath = &[]string{v}[0]
 	}
-	if v, ok := os.LookupEnv("YODEX_TOPIC_HISTORY_S3_PREFIX"); ok {
-		ov.TopicHistoryS3Prefix = &[]string{v}[0]
-	}
 	apiKey = os.Getenv("OPENAI_API_KEY")
 	elevenLabsKey = os.Getenv("ELEVENLABS_API_KEY")
 	return ov, apiKey, elevenLabsKey
@@ -189,9 +184,6 @@ func Merge(fileCfg Config, env Overrides, flags Overrides, openAIKey string, ele
 		}
 		if ov.TopicHistoryPath != nil {
 			cfg.TopicHistoryPath = *ov.TopicHistoryPath
-		}
-		if ov.TopicHistoryS3Prefix != nil {
-			cfg.TopicHistoryS3Prefix = *ov.TopicHistoryS3Prefix
 		}
 	}
 

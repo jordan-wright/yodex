@@ -6,7 +6,7 @@
 - [x] Output path helpers and overwrite checks (`internal/paths/paths.go`).
 - [x] OpenAI SDK client wrapper (Responses API + TTS) and token usage tracking (`internal/ai/openai.go`, `internal/ai/usage.go`).
 - [x] ElevenLabs TTS client and provider selection (`internal/ai/elevenlabs.go`, `cmd/yodex/audio.go`).
-- [x] Topic selection with S3-backed history when `YODEX_TOPIC_HISTORY_S3_PREFIX` is set (`internal/podcast/topic.go`, `internal/podcast/topic_history.go`).
+- [x] Topic selection with S3 or local JSON history storage (`internal/podcast/topic.go`, `internal/podcast/topic_history.go`).
 - [x] Script generation via sectioned prompts (intro/core/deep-dive/outro), continuity anchors, Markdown rendering, and basic lexical safety check (`cmd/yodex/script.go`, `internal/podcast/*`).
 - [x] Audio generation reads `episode.md` and writes `episode.mp3` (`cmd/yodex/audio.go`).
 - [x] S3 uploader with dated keys and latest copies; optional script/meta upload (`internal/storage/s3.go`, `cmd/yodex/publish.go`).
@@ -18,7 +18,6 @@
 - [ ] Word-count enforcement and retry logic are not implemented.
 - [ ] Structured JSON output (`episode.raw.json`) is not generated, but the workflow tries to upload it.
 - [ ] Safety API integration (moderation) is not implemented; only lexical scan exists.
-- [ ] Local topic history file (`TopicHistoryPath`) is unused; only S3 history is supported.
 
 ## Backlog / Future Tasks
 - [ ] Documentation polish (no `README.md` yet): local usage, env vars, GitHub variables/secrets, and troubleshooting.

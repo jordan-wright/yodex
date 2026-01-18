@@ -24,7 +24,7 @@ type TextGeneratorWithUsage interface {
 const topicSystemPrompt = "You propose safe, accurate science topics for advanced 7-year-olds."
 
 // SelectTopic returns the configured topic or proposes one via the AI client.
-func SelectTopic(ctx context.Context, cfg config.Config, ai TextGenerator) (string, error) {
+func SelectTopic(ctx context.Context, date time.Time, cfg config.Config, ai TextGenerator) (string, error) {
 	if strings.TrimSpace(cfg.Topic) != "" {
 		return strings.TrimSpace(cfg.Topic), nil
 	}
@@ -37,7 +37,7 @@ func SelectTopic(ctx context.Context, cfg config.Config, ai TextGenerator) (stri
 		return "", err
 	}
 	history = trimTopicHistory(history, cfg.TopicHistorySize)
-	prompt := buildTopicPrompt(history.Entries)
+	prompt := buildTopicPrompt(recentTopics(history))
 	text, err := ai.GenerateText(ctx, cfg.TextModel, topicSystemPrompt, prompt)
 	if err != nil {
 		return "", err
@@ -46,9 +46,8 @@ func SelectTopic(ctx context.Context, cfg config.Config, ai TextGenerator) (stri
 	if topic == "" {
 		return "", fmt.Errorf("empty topic generated")
 	}
-	if err := appendTopicHistory(ctx, cfg, history, TopicHistoryEntry{
-		Topic:       topic,
-		PublishedAt: time.Now().UTC(),
+	if err := appendTopicHistory(ctx, cfg, history, date, TopicHistoryEntry{
+		Topic: topic,
 	}); err != nil {
 		return "", err
 	}
@@ -56,7 +55,7 @@ func SelectTopic(ctx context.Context, cfg config.Config, ai TextGenerator) (stri
 }
 
 // SelectTopicWithUsage returns the topic and token usage if available.
-func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenerator) (string, ai.TokenUsage, error) {
+func SelectTopicWithUsage(ctx context.Context, date time.Time, cfg config.Config, gen TextGenerator) (string, ai.TokenUsage, error) {
 	if strings.TrimSpace(cfg.Topic) != "" {
 		return strings.TrimSpace(cfg.Topic), ai.TokenUsage{}, nil
 	}
@@ -69,7 +68,7 @@ func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenera
 		return "", ai.TokenUsage{}, err
 	}
 	history = trimTopicHistory(history, cfg.TopicHistorySize)
-	prompt := buildTopicPrompt(history.Entries)
+	prompt := buildTopicPrompt(recentTopics(history))
 
 	if withUsage, ok := gen.(TextGeneratorWithUsage); ok {
 		text, usage, err := withUsage.GenerateTextWithUsage(ctx, cfg.TextModel, topicSystemPrompt, prompt)
@@ -80,9 +79,8 @@ func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenera
 		if topic == "" {
 			return "", ai.TokenUsage{}, fmt.Errorf("empty topic generated")
 		}
-		if err := appendTopicHistory(ctx, cfg, history, TopicHistoryEntry{
-			Topic:       topic,
-			PublishedAt: time.Now().UTC(),
+		if err := appendTopicHistory(ctx, cfg, history, date, TopicHistoryEntry{
+			Topic: topic,
 		}); err != nil {
 			return "", ai.TokenUsage{}, err
 		}
@@ -97,16 +95,15 @@ func SelectTopicWithUsage(ctx context.Context, cfg config.Config, gen TextGenera
 	if topic == "" {
 		return "", ai.TokenUsage{}, fmt.Errorf("empty topic generated")
 	}
-	if err := appendTopicHistory(ctx, cfg, history, TopicHistoryEntry{
-		Topic:       topic,
-		PublishedAt: time.Now().UTC(),
+	if err := appendTopicHistory(ctx, cfg, history, date, TopicHistoryEntry{
+		Topic: topic,
 	}); err != nil {
 		return "", ai.TokenUsage{}, err
 	}
 	return topic, ai.TokenUsage{}, nil
 }
 
-func buildTopicPrompt(recent []TopicHistoryEntry) string {
+func buildTopicPrompt(recent []string) string {
 	prompt := "Propose a single science topic for an advanced 7-year-old. " +
 		"Examples of topics: animals, cultural celebrations, science, astronomy, history, geography, physics, chemistry, biology, or nature. " +
 		"The topic should be interesting and engaging for a 7-year-old. " +
@@ -121,11 +118,11 @@ func buildTopicPrompt(recent []TopicHistoryEntry) string {
 	var b strings.Builder
 	b.WriteString(prompt)
 	b.WriteString("\n\nRecent topics (do not repeat or closely paraphrase any topics in this list):\n")
-	for _, entry := range recent {
-		if strings.TrimSpace(entry.Topic) == "" {
+	for _, topic := range recent {
+		if strings.TrimSpace(topic) == "" {
 			continue
 		}
-		fmt.Fprintf(&b, "- %s\n", strings.TrimSpace(entry.Topic))
+		fmt.Fprintf(&b, "- %s\n", strings.TrimSpace(topic))
 	}
 	return strings.TrimSpace(b.String())
 }
