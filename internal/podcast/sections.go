@@ -49,7 +49,7 @@ func StandardSectionSchema(topic string, date time.Time) []SectionSpec {
 		},
 		{
 			SectionID:              "outro",
-			Prompt:                 fmt.Sprintf("Wrap up the episode about %q with a friendly recap and a thoughtful question for listeners. Keep it 3-5 sentences.", topic),
+			Prompt:                 buildOutroPrompt(topic, date),
 			TransitionInstructions: transitionPromptSuffix,
 		},
 	}
@@ -67,6 +67,15 @@ func buildIntroPrompt(topic string, date time.Time) string {
 		dateLabel,
 		dayPhrase,
 		topic,
+	)
+}
+
+func buildOutroPrompt(topic string, date time.Time) string {
+	dateLabel := date.UTC().Format("Monday, January 2, 2006")
+	return fmt.Sprintf(
+		"Wrap up the episode about %q with a friendly recap and a thoughtful question for listeners. Mention today's date (%s) and say you hope everyone has an amazing day and learns something new. Keep it 3-5 sentences.",
+		topic,
+		dateLabel,
 	)
 }
 
