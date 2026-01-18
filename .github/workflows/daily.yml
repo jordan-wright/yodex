@@ -90,12 +90,15 @@ jobs:
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
         run: |
           INTRO_PATH="$(mktemp -t yodex-intro-XXXXXX.mp3)"
+          OUTRO_PATH="$(mktemp -t yodex-outro-XXXXXX.mp3)"
           OUT_DIR="out/${{ steps.date.outputs.path }}"
           aws s3 cp "s3://${AWS_S3_BUCKET}/music/intro.mp3" "${INTRO_PATH}"
+          aws s3 cp "s3://${AWS_S3_BUCKET}/music/outro.mp3" "${OUTRO_PATH}"
           ffmpeg -hide_banner -loglevel error -y \
             -i "${INTRO_PATH}" \
             -i "${OUT_DIR}/episode.mp3" \
-            -filter_complex "[0:a][1:a]concat=n=2:v=0:a=1[full]" \
+            -i "${OUTRO_PATH}" \
+            -filter_complex "[0:a][1:a][2:a]concat=n=3:v=0:a=1[full]" \
             -map "[full]" \
             "${OUT_DIR}/episode.with-intro.mp3"
           mv "${OUT_DIR}/episode.with-intro.mp3" "${OUT_DIR}/episode.mp3"
