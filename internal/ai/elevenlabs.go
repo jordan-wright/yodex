@@ -80,7 +80,7 @@ type ElevenLabsVoiceSettings struct {
 // DefaultElevenLabsVoiceSettings returns recommended defaults.
 func DefaultElevenLabsVoiceSettings() *ElevenLabsVoiceSettings {
 	return &ElevenLabsVoiceSettings{
-		Stability:       0.5,
+		Stability:       0.25,
 		SimilarityBoost: 0.75,
 		Style:           0.0,
 		UseSpeakerBoost: true,
