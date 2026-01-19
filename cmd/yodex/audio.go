@@ -163,17 +163,26 @@ func concatMP3Files(outPath string, inputs []string) error {
 		}
 	}()
 	for _, path := range inputs {
-		if strings.TrimSpace(path) == "" {
+		trimmed := strings.TrimSpace(path)
+		if trimmed == "" {
 			continue
 		}
-		if _, err := fmt.Fprintf(listFile, "file '%s'\n", escapeConcatPath(path)); err != nil {
+		absPath, err := filepath.Abs(trimmed)
+		if err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(listFile, "file '%s'\n", escapeConcatPath(absPath)); err != nil {
 			return err
 		}
 	}
 	if err := listFile.Close(); err != nil {
 		return err
 	}
-	cmd := exec.Command("ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", listFile.Name(), "-c:a", "libmp3lame", outPath)
+	outAbs, err := filepath.Abs(outPath)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", listFile.Name(), "-c:a", "libmp3lame", outAbs)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("concat mp3: %w", err)
 	}
@@ -236,10 +245,14 @@ func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.C
 		}
 		tmpPaths = append(tmpPaths, tmpPath)
 		if i < len(segments)-1 {
-			if _, err := os.Stat(pauseAudioPath); err != nil {
+			pauseAbs, err := filepath.Abs(pauseAudioPath)
+			if err != nil {
+				return err
+			}
+			if _, err := os.Stat(pauseAbs); err != nil {
 				return fmt.Errorf("pause audio missing: %w", err)
 			}
-			tmpPaths = append(tmpPaths, pauseAudioPath)
+			tmpPaths = append(tmpPaths, pauseAbs)
 		}
 	}
 	if err := concatMP3(outPath, tmpPaths); err != nil {
