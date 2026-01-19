@@ -93,7 +93,8 @@ const gameSystemPrompt = "You are a friendly, curious podcast host creating an a
 	"- No sarcasm or negativity.\n" +
 	"- Encourage thinking, imagination, and joy.\n" +
 	"- Avoid mentioning rules explicitly during gameplay.\n" +
-	"- End the game with a positive closing line (e.g., encouragement or fun fact).\n\n" +
+	"- End the game with a positive closing line (e.g., encouragement or fun fact).\n" +
+	"- Do not say goodbye or reference the show ending; the outro handles that.\n\n" +
 	"Now generate the game round using the provided rules."
 
 func BuildGamePrompt(topic string, date time.Time, rules GameRules) (string, string, error) {
