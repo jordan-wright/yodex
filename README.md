@@ -108,7 +108,7 @@ Repo secrets:
 
 Game audio:
 - Intro/outro/game music lives in S3 under `music/intro.mp3`, `music/game_intro.mp3`, `music/outro.mp3`.
-- Long pauses use `assets/audio/pause7s.mp3` inserted during audio generation.
+- Long pauses use `assets/audio/pause6s.mp3` inserted during audio generation.
 
 ## Tests
 

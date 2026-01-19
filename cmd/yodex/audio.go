@@ -18,7 +18,7 @@ import (
 	"yodex/internal/podcast"
 )
 
-var pauseAudioPath = filepath.Join("assets", "audio", "pause7s.mp3")
+var pauseAudioPath = filepath.Join("assets", "audio", "pause6s.mp3")
 
 var newTTSClient = func(cfg cfgpkg.Config) (ai.TTSClient, error) {
 	provider := strings.ToLower(strings.TrimSpace(cfg.TTSProvider))

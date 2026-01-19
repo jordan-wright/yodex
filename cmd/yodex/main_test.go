@@ -63,7 +63,7 @@ func TestAudioFlagParsing(t *testing.T) {
 
 	origPausePath := pauseAudioPath
 	t.Cleanup(func() { pauseAudioPath = origPausePath })
-	pauseAudioPath = filepath.Join(t.TempDir(), "pause7s.mp3")
+	pauseAudioPath = filepath.Join(t.TempDir(), "pause6s.mp3")
 	if err := os.WriteFile(pauseAudioPath, []byte("pausebytes"), 0o644); err != nil {
 		t.Fatalf("write pause audio: %v", err)
 	}
