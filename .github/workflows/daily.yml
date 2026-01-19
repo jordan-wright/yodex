@@ -1,39 +1,22 @@
-name: Daily Yodex
+name: Audio Debug
 
 on:
-  schedule:
-    - cron: "0 12 * * *" # 12:00 UTC daily
   workflow_dispatch:
     inputs:
       date:
         description: "UTC date (YYYY-MM-DD)"
         required: false
         type: string
-      debug:
-        description: "Upload intermediate artifacts"
-        required: false
-        type: boolean
-        default: false
-
-concurrency:
-  group: yodex-daily
-  cancel-in-progress: false
 
 jobs:
-  build:
+  debug:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
 
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
@@ -49,46 +32,7 @@ jobs:
           echo "value=${DATE_VAL}" >> "$GITHUB_OUTPUT"
           echo "path=$(date -u -d "${DATE_VAL}" +%Y/%m/%d)" >> "$GITHUB_OUTPUT"
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
-
-      - name: Generate script
-        if: ${{ !inputs.debug }}
-        env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-          AWS_S3_PREFIX: ${{ secrets.AWS_S3_PREFIX }}
-          AWS_REGION: ${{ vars.AWS_REGION }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          go run ./cmd/yodex script --date=${{ steps.date.outputs.value }}
-
-      - name: Upload script artifacts
-        if: ${{ !inputs.debug }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: script-${{ steps.date.outputs.value }}
-          path: |
-            out/${{ steps.date.outputs.path }}/episode.md
-            out/${{ steps.date.outputs.path }}/meta.json
-            out/${{ steps.date.outputs.path }}/episode.raw.json
-          if-no-files-found: warn
-
-      - name: Generate audio
-        if: ${{ !inputs.debug }}
-        env:
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          YODEX_TTS_PROVIDER: ${{ vars.YODEX_TTS_PROVIDER }}
-          YODEX_TTS_MODEL: ${{ vars.YODEX_TTS_MODEL }}
-          YODEX_VOICE: ${{ vars.YODEX_VOICE }}
-        run: |
-          go run ./cmd/yodex audio --date=${{ steps.date.outputs.value }}
-
       - name: Debug audio assets
-        if: ${{ inputs.debug }}
         run: |
           echo "PWD: $(pwd)"
           ls -la
@@ -99,54 +43,3 @@ jobs:
           ffmpeg -hide_banner -loglevel error -i assets/audio/pause7s.mp3 -f null - || true
           echo "section mp3s:"
           ls -la out/${{ steps.date.outputs.path }}/*.mp3 || true
-
-      - name: Add intro and outro music
-        if: ${{ !inputs.debug }}
-        env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-        run: |
-          INTRO_PATH="$(mktemp -t yodex-intro-XXXXXX.mp3)"
-          GAME_PATH="$(mktemp -t yodex-game-XXXXXX.mp3)"
-          OUTRO_PATH="$(mktemp -t yodex-outro-XXXXXX.mp3)"
-          OUT_DIR="out/${{ steps.date.outputs.path }}"
-          aws s3 cp "s3://${AWS_S3_BUCKET}/music/intro.mp3" "${INTRO_PATH}"
-          aws s3 cp "s3://${AWS_S3_BUCKET}/music/game_intro.mp3" "${GAME_PATH}"
-          aws s3 cp "s3://${AWS_S3_BUCKET}/music/outro.mp3" "${OUTRO_PATH}"
-          ffmpeg -hide_banner -loglevel error -y \
-            -i "${INTRO_PATH}" \
-            -i "${OUT_DIR}/intro.mp3" \
-            -i "${OUT_DIR}/topic.mp3" \
-            -i "${GAME_PATH}" \
-            -i "${OUT_DIR}/game.mp3" \
-            -i "${OUT_DIR}/outro.mp3" \
-            -i "${OUTRO_PATH}" \
-            -filter_complex "[0:a][1:a][2:a][3:a][4:a][5:a][6:a]concat=n=7:v=0:a=1[full]" \
-            -map "[full]" \
-            "${OUT_DIR}/episode.with-music.mp3"
-          mv "${OUT_DIR}/episode.with-music.mp3" "${OUT_DIR}/episode.mp3"
-
-      - name: Upload audio artifact
-        if: ${{ !inputs.debug }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: audio-${{ steps.date.outputs.value }}
-          path: out/${{ steps.date.outputs.path }}/episode.mp3
-          if-no-files-found: warn
-
-      - name: Publish to S3
-        if: ${{ !inputs.debug }}
-        env:
-          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
-          AWS_S3_PREFIX: ${{ secrets.AWS_S3_PREFIX }}
-          AWS_REGION: ${{ vars.AWS_REGION }}
-        run: |
-          go run ./cmd/yodex publish --date=${{ steps.date.outputs.value }} --include-script
-
-      - name: Job summary
-        if: ${{ !inputs.debug }}
-        run: |
-          echo "## Yodex Daily" >> $GITHUB_STEP_SUMMARY
-          echo "- Date: ${{ steps.date.outputs.value }}" >> $GITHUB_STEP_SUMMARY
-          if [ -f out/${{ steps.date.outputs.path }}/meta.json ]; then
-            echo "- Meta: $(cat out/${{ steps.date.outputs.path }}/meta.json)" >> $GITHUB_STEP_SUMMARY
-          fi
