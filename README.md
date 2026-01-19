@@ -9,8 +9,8 @@ experiment to improve my own AI agent workflows.
 
 ## Commands
 
-- `yodex script` generates `episode.md` and `meta.json`.
-- `yodex audio` reads `episode.md` and generates `episode.mp3`.
+- `yodex script` generates `episode.md`, per-section files, and `meta.json`.
+- `yodex audio` reads section files (or `episode.md` fallback) and generates `episode.mp3`.
 - `yodex publish` uploads artifacts to S3 and copies to `latest/` keys.
 - `yodex topic` prints a proposed topic (or uses config override).
 - `yodex all` runs script -> audio -> publish in sequence.
@@ -51,7 +51,10 @@ export AWS_REGION=us-west-2
 go run ./cmd/yodex publish --date=YYYY-MM-DD --include-script
 ```
 
-Outputs land under `out/YYYY/MM/DD/`.
+Outputs land under `out/YYYY/MM/DD/` and include:
+- `episode.md` (plain text transcript)
+- `intro.md`, `topic.md`, `game.md`, `outro.md`
+- `episode.mp3` plus per-section MP3s
 
 ## Configuration
 
@@ -102,6 +105,10 @@ Repo secrets:
 - `AWS_ROLE_ARN`
 - `AWS_S3_BUCKET`
 - `AWS_S3_PREFIX`
+
+Game audio:
+- Intro/outro/game music lives in S3 under `music/intro.mp3`, `music/game_intro.mp3`, `music/outro.mp3`.
+- Long pauses use `assets/audio/pause7s.mp3` inserted during audio generation.
 
 ## Tests
 

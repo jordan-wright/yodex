@@ -29,8 +29,8 @@ generation and OpenAI TTS.
   - Else, use OpenAI to propose a topic appropriate for an advanced 7-year-old.
   - Track recent topics in S3 (when configured) or a local JSON file.
 - Script generation:
-  - Generate sections for intro, core idea, deep dive, and outro.
-  - Save Markdown and metadata.
+  - Generate sections for intro, topic (core + deep dive), brain game, and outro.
+  - Save transcript and per-section files.
   - Run a basic lexical safety check.
 - TTS synthesis:
   - Convert the script to MP3 using OpenAI or ElevenLabs.
@@ -56,7 +56,7 @@ generation and OpenAI TTS.
 - Packages:
   - `internal/config` — Read `config.json`, env, and flags; validation.
   - `internal/ai` — OpenAI SDK wrapper and ElevenLabs TTS client.
-  - `internal/podcast` — Topic selection, section prompts, safety checks.
+  - `internal/podcast` — Topic selection, section prompts, brain games, safety checks.
   - `internal/storage` — S3 upload + key helpers.
   - Logging: use `log/slog` directly (no separate log package).
 
@@ -67,8 +67,8 @@ generation and OpenAI TTS.
 - Initialization: `openai.NewClient(option.WithAPIKey(os.Getenv("OPENAI_API_KEY")))`.
 
 ### Data Flow (GitHub Actions)
-1) `yodex script` produces `out/YYYY/MM/DD/episode.md` and `meta.json`.
-2) `yodex audio` reads `episode.md` and emits `episode.mp3`.
+1) `yodex script` produces `out/YYYY/MM/DD/episode.md`, per-section files, and `meta.json`.
+2) `yodex audio` reads section files and emits `episode.mp3` plus per-section MP3s.
 3) `yodex publish` uploads `episode.mp3` (and optionally `episode.md`,
    `meta.json`) to S3 and copies to `latest/` keys.
 
@@ -81,8 +81,8 @@ generation and OpenAI TTS.
 
 ## Prompting (Current Implementation)
 - System prompt: fixed kid-safe guidance.
-- User prompt: sectioned prompts for `intro`, `core-idea`, `deep-dive`, and
-  `outro`, with continuity anchors between sections.
+- User prompt: sectioned prompts for `intro`, `topic`, `game`, and `outro`,
+  with continuity anchors between sections.
 - Section text is generated without headings; Markdown headings are added during
   rendering.
 
@@ -148,12 +148,13 @@ generation and OpenAI TTS.
   1. Checkout + setup Go.
   2. `yodex script --date=UTC_TODAY` → upload `episode.md`, `meta.json` as artifacts.
   3. `yodex audio --date=UTC_TODAY` → upload `episode.mp3` as artifact.
-  4. Configure AWS via OIDC only for publish step.
+  4. Add intro + game + outro music around the section MP3s.
   5. `yodex publish --date=UTC_TODAY` → print and save the public URL.
 - Repo variables: `YODEX_TTS_PROVIDER`, `YODEX_TTS_MODEL`, `YODEX_VOICE`,
   `AWS_REGION`.
 - Repo secrets: `OPENAI_API_KEY`, `ELEVENLABS_API_KEY`, `AWS_ROLE_ARN`,
   `AWS_S3_BUCKET`, `AWS_S3_PREFIX`.
+- Music in S3: `music/intro.mp3`, `music/game_intro.mp3`, `music/outro.mp3`.
 - Concurrency: ensure only one daily run overlaps.
 
 ---
@@ -176,7 +177,7 @@ generation and OpenAI TTS.
 ---
 
 ## Acceptance Criteria
-- `yodex script` produces Markdown with intro/core/deep-dive/outro sections.
+- `yodex script` produces Markdown with intro/topic/game/outro sections.
 - `yodex audio` emits a playable MP3 from the Markdown script using the
   configured TTS provider.
 - `yodex publish` uploads to S3 and returns a public URL.
