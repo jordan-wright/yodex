@@ -226,6 +226,13 @@ func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.C
 	if len(segments) == 0 {
 		return fmt.Errorf("no text to synthesize")
 	}
+	pauseAbs, err := filepath.Abs(pauseAudioPath)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(pauseAbs); err != nil {
+		return fmt.Errorf("pause audio missing: %w", err)
+	}
 	tmpPaths := make([]string, 0, len(segments))
 	for i, segment := range segments {
 		if strings.TrimSpace(segment) == "" {
@@ -245,13 +252,6 @@ func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.C
 		}
 		tmpPaths = append(tmpPaths, tmpPath)
 		if i < len(segments)-1 {
-			pauseAbs, err := filepath.Abs(pauseAudioPath)
-			if err != nil {
-				return err
-			}
-			if _, err := os.Stat(pauseAbs); err != nil {
-				return fmt.Errorf("pause audio missing: %w", err)
-			}
 			tmpPaths = append(tmpPaths, pauseAbs)
 		}
 	}
@@ -259,7 +259,7 @@ func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.C
 		return err
 	}
 	for _, path := range tmpPaths {
-		if path == pauseAudioPath {
+		if path == pauseAbs {
 			continue
 		}
 		if err := os.Remove(path); err != nil {
