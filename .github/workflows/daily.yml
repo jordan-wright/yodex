@@ -56,6 +56,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION || 'us-west-2' }}
 
       - name: Generate script
+        if: ${{ !inputs.debug }}
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
           AWS_S3_PREFIX: ${{ secrets.AWS_S3_PREFIX }}
@@ -65,7 +66,7 @@ jobs:
           go run ./cmd/yodex script --date=${{ steps.date.outputs.value }}
 
       - name: Upload script artifacts
-        if: ${{ inputs.debug }}
+        if: ${{ !inputs.debug }}
         uses: actions/upload-artifact@v4
         with:
           name: script-${{ steps.date.outputs.value }}
@@ -76,6 +77,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Generate audio
+        if: ${{ !inputs.debug }}
         env:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -85,7 +87,21 @@ jobs:
         run: |
           go run ./cmd/yodex audio --date=${{ steps.date.outputs.value }}
 
+      - name: Debug audio assets
+        if: ${{ inputs.debug }}
+        run: |
+          echo "PWD: $(pwd)"
+          ls -la
+          ls -la assets || true
+          ls -la assets/audio || true
+          echo "pause asset:"
+          ls -la assets/audio/pause7s.mp3 || true
+          ffmpeg -hide_banner -loglevel error -i assets/audio/pause7s.mp3 -f null - || true
+          echo "section mp3s:"
+          ls -la out/${{ steps.date.outputs.path }}/*.mp3 || true
+
       - name: Add intro and outro music
+        if: ${{ !inputs.debug }}
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
         run: |
@@ -110,7 +126,7 @@ jobs:
           mv "${OUT_DIR}/episode.with-music.mp3" "${OUT_DIR}/episode.mp3"
 
       - name: Upload audio artifact
-        if: ${{ inputs.debug }}
+        if: ${{ !inputs.debug }}
         uses: actions/upload-artifact@v4
         with:
           name: audio-${{ steps.date.outputs.value }}
@@ -118,6 +134,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Publish to S3
+        if: ${{ !inputs.debug }}
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
           AWS_S3_PREFIX: ${{ secrets.AWS_S3_PREFIX }}
@@ -126,7 +143,7 @@ jobs:
           go run ./cmd/yodex publish --date=${{ steps.date.outputs.value }} --include-script
 
       - name: Job summary
-        if: always()
+        if: ${{ !inputs.debug }}
         run: |
           echo "## Yodex Daily" >> $GITHUB_STEP_SUMMARY
           echo "- Date: ${{ steps.date.outputs.value }}" >> $GITHUB_STEP_SUMMARY
