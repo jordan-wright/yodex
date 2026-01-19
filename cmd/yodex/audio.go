@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"yodex/internal/ai"
@@ -15,6 +16,8 @@ import (
 	"yodex/internal/paths"
 	"yodex/internal/podcast"
 )
+
+var pauseAudioPath = filepath.Join("assets", "audio", "pause10s.mp3")
 
 var newTTSClient = func(cfg cfgpkg.Config) (ai.TTSClient, error) {
 	provider := strings.ToLower(strings.TrimSpace(cfg.TTSProvider))
@@ -101,16 +104,8 @@ func cmdAudio(args []string) error {
 				return err
 			}
 			outPath := builder.EpisodeSectionMP3(date, sectionID)
-			out, err := os.Create(outPath)
-			if err != nil {
+			if err := synthesizeWithPauses(ctx, client, cfg, string(text), outPath); err != nil {
 				return err
-			}
-			if err := client.TTS(ctx, cfg.TTSModel, cfg.Voice, string(text), out); err != nil {
-				_ = out.Close()
-				return err
-			}
-			if err := out.Close(); err != nil {
-				slog.Warn("failed to close section mp3 output", "err", err, "sectionID", sectionID)
 			}
 		}
 		sectionMP3s := make([]string, 0, len(sectionIDs))
@@ -128,16 +123,8 @@ func cmdAudio(args []string) error {
 		if err != nil {
 			return err
 		}
-		out, err := os.Create(mp3Path)
-		if err != nil {
+		if err := synthesizeWithPauses(ctx, client, cfg, string(script), mp3Path); err != nil {
 			return err
-		}
-		if err := client.TTS(ctx, cfg.TTSModel, cfg.Voice, string(script), out); err != nil {
-			_ = out.Close()
-			return err
-		}
-		if err := out.Close(); err != nil {
-			slog.Warn("failed to close mp3 output", "err", err)
 		}
 	}
 
@@ -185,4 +172,52 @@ func concatMP3Files(outPath string, inputs []string) error {
 		}
 	}
 	return nil
+}
+
+func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.Config, text, outPath string) error {
+	segments := splitOnLongPause(text)
+	if len(segments) == 0 {
+		return fmt.Errorf("no text to synthesize")
+	}
+	tmpPaths := make([]string, 0, len(segments))
+	for i, segment := range segments {
+		if strings.TrimSpace(segment) == "" {
+			continue
+		}
+		tmpPath := fmt.Sprintf("%s.part.%02d.mp3", outPath, i)
+		out, err := os.Create(tmpPath)
+		if err != nil {
+			return err
+		}
+		if err := client.TTS(ctx, cfg.TTSModel, cfg.Voice, segment, out); err != nil {
+			_ = out.Close()
+			return err
+		}
+		if err := out.Close(); err != nil {
+			return err
+		}
+		tmpPaths = append(tmpPaths, tmpPath)
+		if i < len(segments)-1 {
+			if _, err := os.Stat(pauseAudioPath); err != nil {
+				return fmt.Errorf("pause audio missing: %w", err)
+			}
+			tmpPaths = append(tmpPaths, pauseAudioPath)
+		}
+	}
+	if err := concatMP3Files(outPath, tmpPaths); err != nil {
+		return err
+	}
+	for _, path := range tmpPaths {
+		if path == pauseAudioPath {
+			continue
+		}
+		if err := os.Remove(path); err != nil {
+			slog.Warn("failed to remove temp audio", "err", err, "path", path)
+		}
+	}
+	return nil
+}
+
+func splitOnLongPause(text string) []string {
+	return strings.Split(text, "[long pause]")
 }

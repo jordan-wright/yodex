@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -29,6 +30,12 @@ func (f *fakeTTSClient) TTS(ctx context.Context, model, voice, text string, w io
 }
 
 func TestAudioWritesMP3(t *testing.T) {
+	origPausePath := pauseAudioPath
+	t.Cleanup(func() { pauseAudioPath = origPausePath })
+	pauseAudioPath = filepath.Join(t.TempDir(), "pause10s.mp3")
+	if err := os.WriteFile(pauseAudioPath, []byte("pausebytes"), 0o644); err != nil {
+		t.Fatalf("write pause audio: %v", err)
+	}
 	origClient := newTTSClient
 	t.Cleanup(func() { newTTSClient = origClient })
 
@@ -54,7 +61,7 @@ func TestAudioWritesMP3(t *testing.T) {
 	}
 	sectionData := map[string]string{
 		"intro": "Hello there.",
-		"topic": "Topic time.",
+		"topic": "Topic time. [long pause] Nice idea.",
 		"game":  "Game time.",
 		"outro": "Bye.",
 	}
@@ -69,8 +76,8 @@ func TestAudioWritesMP3(t *testing.T) {
 	if code := run([]string{"audio", "--date=2025-09-30", "--voice=alloy"}); code != 0 {
 		t.Fatalf("audio returned non-zero: %d", code)
 	}
-	if fake.calls != 4 {
-		t.Fatalf("expected 4 TTS calls, got %d", fake.calls)
+	if fake.calls != 5 {
+		t.Fatalf("expected 5 TTS calls, got %d", fake.calls)
 	}
 
 	mp3Path := builder.EpisodeMP3(date)
@@ -78,7 +85,7 @@ func TestAudioWritesMP3(t *testing.T) {
 	if err != nil {
 		t.Fatalf("missing episode.mp3: %v", err)
 	}
-	expectedSize := int64(len("mp3bytes") * 4)
+	expectedSize := int64(len("mp3bytes")*5 + len("pausebytes"))
 	if info.Size() != expectedSize {
 		t.Fatalf("unexpected episode.mp3 size: %d", info.Size())
 	}
