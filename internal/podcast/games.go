@@ -65,8 +65,22 @@ func ChooseGame(date time.Time, games []GameRules) (GameRules, error) {
 	if len(games) == 0 {
 		return GameRules{}, errors.New("no games available")
 	}
-	index := int(date.UTC().Weekday()) % len(games)
+	weekday := date.UTC().Weekday()
+	if name, ok := weekdayGameMap()[weekday]; ok {
+		for _, game := range games {
+			if game.Name == name {
+				return game, nil
+			}
+		}
+	}
+	index := int(weekday) % len(games)
 	return games[index], nil
+}
+
+func weekdayGameMap() map[time.Weekday]string {
+	return map[time.Weekday]string{
+		time.Sunday: "fact-or-fib",
+	}
 }
 
 const gameSystemPrompt = "You are a friendly, curious podcast host creating an audio-only daily game for kids ages 7–9.\n\n" +
