@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -112,7 +113,7 @@ func cmdAudio(args []string) error {
 		for _, sectionID := range sectionIDs {
 			sectionMP3s = append(sectionMP3s, builder.EpisodeSectionMP3(date, sectionID))
 		}
-		if err := concatMP3Files(mp3Path, sectionMP3s); err != nil {
+		if err := concatMP3(mp3Path, sectionMP3s); err != nil {
 			return err
 		}
 	} else {
@@ -149,6 +150,43 @@ func allFilesExist(paths []string) bool {
 }
 
 func concatMP3Files(outPath string, inputs []string) error {
+	if len(inputs) == 0 {
+		return fmt.Errorf("no inputs to concatenate")
+	}
+	listFile, err := os.CreateTemp("", "yodex-mp3-list-*.txt")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := os.Remove(listFile.Name()); cerr != nil {
+			slog.Warn("failed to remove concat list file", "err", cerr, "path", listFile.Name())
+		}
+	}()
+	for _, path := range inputs {
+		if strings.TrimSpace(path) == "" {
+			continue
+		}
+		if _, err := fmt.Fprintf(listFile, "file '%s'\n", escapeConcatPath(path)); err != nil {
+			return err
+		}
+	}
+	if err := listFile.Close(); err != nil {
+		return err
+	}
+	cmd := exec.Command("ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", listFile.Name(), "-c:a", "libmp3lame", outPath)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("concat mp3: %w", err)
+	}
+	return nil
+}
+
+func escapeConcatPath(path string) string {
+	return strings.ReplaceAll(path, "'", "'\\''")
+}
+
+var concatMP3 = concatMP3Files
+
+func concatMP3ByCopy(outPath string, inputs []string) error {
 	out, err := os.Create(outPath)
 	if err != nil {
 		return err
@@ -204,7 +242,7 @@ func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.C
 			tmpPaths = append(tmpPaths, pauseAudioPath)
 		}
 	}
-	if err := concatMP3Files(outPath, tmpPaths); err != nil {
+	if err := concatMP3(outPath, tmpPaths); err != nil {
 		return err
 	}
 	for _, path := range tmpPaths {

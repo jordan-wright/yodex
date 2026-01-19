@@ -30,6 +30,10 @@ func (f *fakeTTSClient) TTS(ctx context.Context, model, voice, text string, w io
 }
 
 func TestAudioWritesMP3(t *testing.T) {
+	origConcat := concatMP3
+	t.Cleanup(func() { concatMP3 = origConcat })
+	concatMP3 = concatMP3ByCopy
+
 	origPausePath := pauseAudioPath
 	t.Cleanup(func() { pauseAudioPath = origPausePath })
 	pauseAudioPath = filepath.Join(t.TempDir(), "pause10s.mp3")

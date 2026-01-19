@@ -57,6 +57,17 @@ func TestAudioFlagParsing(t *testing.T) {
 	origClient := newTTSClient
 	t.Cleanup(func() { newTTSClient = origClient })
 
+	origConcat := concatMP3
+	t.Cleanup(func() { concatMP3 = origConcat })
+	concatMP3 = concatMP3ByCopy
+
+	origPausePath := pauseAudioPath
+	t.Cleanup(func() { pauseAudioPath = origPausePath })
+	pauseAudioPath = filepath.Join(t.TempDir(), "pause10s.mp3")
+	if err := os.WriteFile(pauseAudioPath, []byte("pausebytes"), 0o644); err != nil {
+		t.Fatalf("write pause audio: %v", err)
+	}
+
 	fake := &fakeTTSClient{}
 	newTTSClient = func(cfg cfgpkg.Config) (ai.TTSClient, error) {
 		return fake, nil
