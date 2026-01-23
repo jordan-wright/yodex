@@ -61,10 +61,10 @@ func TestAudioFlagParsing(t *testing.T) {
 	t.Cleanup(func() { concatMP3 = origConcat })
 	concatMP3 = concatMP3ByCopy
 
-	origPausePath := pauseAudioPath
-	t.Cleanup(func() { pauseAudioPath = origPausePath })
-	pauseAudioPath = filepath.Join(t.TempDir(), "pause6s.mp3")
-	if err := os.WriteFile(pauseAudioPath, []byte("pausebytes"), 0o644); err != nil {
+	origLongPausePath := longPauseAudioPath
+	t.Cleanup(func() { longPauseAudioPath = origLongPausePath })
+	longPauseAudioPath = filepath.Join(t.TempDir(), "pause6s.mp3")
+	if err := os.WriteFile(longPauseAudioPath, []byte("pausebytes"), 0o644); err != nil {
 		t.Fatalf("write pause audio: %v", err)
 	}
 
