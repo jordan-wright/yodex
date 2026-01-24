@@ -18,7 +18,13 @@ import (
 	"yodex/internal/podcast"
 )
 
-var pauseAudioPath = filepath.Join("assets", "audio", "pause6s.mp3")
+const (
+	longPauseTag  = "[long pause]"
+	shortPauseTag = "[short pause]"
+)
+
+var longPauseAudioPath = filepath.Join("assets", "audio", "pause6s.mp3")
+var shortPauseAudioPath = filepath.Join("assets", "audio", "pause3s.mp3")
 
 var newTTSClient = func(cfg cfgpkg.Config) (ai.TTSClient, error) {
 	provider := strings.ToLower(strings.TrimSpace(cfg.TTSProvider))
@@ -222,20 +228,37 @@ func concatMP3ByCopy(outPath string, inputs []string) error {
 }
 
 func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.Config, text, outPath string) error {
-	segments := splitOnLongPause(text)
+	segments := splitOnPauses(text)
 	if len(segments) == 0 {
 		return fmt.Errorf("no text to synthesize")
 	}
-	pauseAbs, err := filepath.Abs(pauseAudioPath)
+	longPauseAbs, err := filepath.Abs(longPauseAudioPath)
 	if err != nil {
 		return err
 	}
-	if _, err := os.Stat(pauseAbs); err != nil {
-		return fmt.Errorf("pause audio missing: %w", err)
+	shortPauseAbs, err := filepath.Abs(shortPauseAudioPath)
+	if err != nil {
+		return err
+	}
+	pausePaths := map[string]string{
+		longPauseTag:  longPauseAbs,
+		shortPauseTag: shortPauseAbs,
+	}
+	for _, segment := range segments {
+		if segment.pauseTag == "" {
+			continue
+		}
+		absPath, ok := pausePaths[segment.pauseTag]
+		if !ok {
+			return fmt.Errorf("unknown pause audio tag: %s", segment.pauseTag)
+		}
+		if _, err := os.Stat(absPath); err != nil {
+			return fmt.Errorf("pause audio missing: %w", err)
+		}
 	}
 	tmpPaths := make([]string, 0, len(segments))
 	for i, segment := range segments {
-		if strings.TrimSpace(segment) == "" {
+		if strings.TrimSpace(segment.text) == "" {
 			continue
 		}
 		tmpPath := fmt.Sprintf("%s.part.%02d.mp3", outPath, i)
@@ -243,7 +266,7 @@ func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.C
 		if err != nil {
 			return err
 		}
-		if err := client.TTS(ctx, cfg.TTSModel, cfg.Voice, segment, out); err != nil {
+		if err := client.TTS(ctx, cfg.TTSModel, cfg.Voice, segment.text, out); err != nil {
 			_ = out.Close()
 			return err
 		}
@@ -251,15 +274,17 @@ func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.C
 			return err
 		}
 		tmpPaths = append(tmpPaths, tmpPath)
-		if i < len(segments)-1 {
-			tmpPaths = append(tmpPaths, pauseAbs)
+		if segment.pauseTag == longPauseTag {
+			tmpPaths = append(tmpPaths, longPauseAbs)
+		} else if segment.pauseTag == shortPauseTag {
+			tmpPaths = append(tmpPaths, shortPauseAbs)
 		}
 	}
 	if err := concatMP3(outPath, tmpPaths); err != nil {
 		return err
 	}
 	for _, path := range tmpPaths {
-		if path == pauseAbs {
+		if path == longPauseAbs || path == shortPauseAbs {
 			continue
 		}
 		if err := os.Remove(path); err != nil {
@@ -269,6 +294,40 @@ func synthesizeWithPauses(ctx context.Context, client ai.TTSClient, cfg cfgpkg.C
 	return nil
 }
 
-func splitOnLongPause(text string) []string {
-	return strings.Split(text, "[long pause]")
+type pauseSegment struct {
+	text     string
+	pauseTag string
+}
+
+func splitOnPauses(text string) []pauseSegment {
+	var segments []pauseSegment
+	for len(text) > 0 {
+		longIndex := strings.Index(text, longPauseTag)
+		shortIndex := strings.Index(text, shortPauseTag)
+		nextIndex, tag := nextPauseTag(longIndex, shortIndex)
+		if nextIndex == -1 {
+			segments = append(segments, pauseSegment{text: text})
+			break
+		}
+		segment := pauseSegment{text: text[:nextIndex], pauseTag: tag}
+		segments = append(segments, segment)
+		text = text[nextIndex+len(tag):]
+	}
+	return segments
+}
+
+func nextPauseTag(longIndex, shortIndex int) (int, string) {
+	if longIndex == -1 && shortIndex == -1 {
+		return -1, ""
+	}
+	if longIndex == -1 {
+		return shortIndex, shortPauseTag
+	}
+	if shortIndex == -1 {
+		return longIndex, longPauseTag
+	}
+	if longIndex <= shortIndex {
+		return longIndex, longPauseTag
+	}
+	return shortIndex, shortPauseTag
 }

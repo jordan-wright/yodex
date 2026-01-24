@@ -34,11 +34,20 @@ func TestAudioWritesMP3(t *testing.T) {
 	t.Cleanup(func() { concatMP3 = origConcat })
 	concatMP3 = concatMP3ByCopy
 
-	origPausePath := pauseAudioPath
-	t.Cleanup(func() { pauseAudioPath = origPausePath })
-	pauseAudioPath = filepath.Join(t.TempDir(), "pause6s.mp3")
-	if err := os.WriteFile(pauseAudioPath, []byte("pausebytes"), 0o644); err != nil {
+	origLongPausePath := longPauseAudioPath
+	origShortPausePath := shortPauseAudioPath
+	t.Cleanup(func() {
+		longPauseAudioPath = origLongPausePath
+		shortPauseAudioPath = origShortPausePath
+	})
+	pauseDir := t.TempDir()
+	longPauseAudioPath = filepath.Join(pauseDir, "pause6s.mp3")
+	if err := os.WriteFile(longPauseAudioPath, []byte("pausebytes"), 0o644); err != nil {
 		t.Fatalf("write pause audio: %v", err)
+	}
+	shortPauseAudioPath = filepath.Join(pauseDir, "pause3s.mp3")
+	if err := os.WriteFile(shortPauseAudioPath, []byte("shortbytes"), 0o644); err != nil {
+		t.Fatalf("write short pause audio: %v", err)
 	}
 	origClient := newTTSClient
 	t.Cleanup(func() { newTTSClient = origClient })
@@ -64,7 +73,7 @@ func TestAudioWritesMP3(t *testing.T) {
 		t.Fatalf("EnsureOutDir: %v", err)
 	}
 	sectionData := map[string]string{
-		"intro": "Hello there.",
+		"intro": "Hello there. [short pause] Ready to explore?",
 		"topic": "Topic time. [long pause] Nice idea.",
 		"game":  "Game time.",
 		"outro": "Bye.",
@@ -80,8 +89,8 @@ func TestAudioWritesMP3(t *testing.T) {
 	if code := run([]string{"audio", "--date=2025-09-30", "--voice=alloy"}); code != 0 {
 		t.Fatalf("audio returned non-zero: %d", code)
 	}
-	if fake.calls != 5 {
-		t.Fatalf("expected 5 TTS calls, got %d", fake.calls)
+	if fake.calls != 6 {
+		t.Fatalf("expected 6 TTS calls, got %d", fake.calls)
 	}
 
 	mp3Path := builder.EpisodeMP3(date)
@@ -89,7 +98,7 @@ func TestAudioWritesMP3(t *testing.T) {
 	if err != nil {
 		t.Fatalf("missing episode.mp3: %v", err)
 	}
-	expectedSize := int64(len("mp3bytes")*5 + len("pausebytes"))
+	expectedSize := int64(len("mp3bytes")*6 + len("pausebytes") + len("shortbytes"))
 	if info.Size() != expectedSize {
 		t.Fatalf("unexpected episode.mp3 size: %d", info.Size())
 	}
