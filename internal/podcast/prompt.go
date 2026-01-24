@@ -26,7 +26,7 @@ func BuildScriptPrompts(topic string) (string, string, error) {
 		return "", "", errors.New("topic is required")
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "You are writing a kid-friendly science podcast episode for the \"Curious Kids Podcast\" hosted by Jessica, about %q. ", topic)
+	fmt.Fprintf(&b, "You are writing a kid-friendly science podcast episode for the \"Curious World Podcast\" hosted by Jessica, about %q. ", topic)
 	b.WriteString("Each request is for one section of the episode. ")
 	b.WriteString("Write in a friendly narrator voice, no headings or labels. ")
 	b.WriteString("Use inflection tags generously throughout the section to add energy and texture. ")
