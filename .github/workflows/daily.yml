@@ -90,21 +90,24 @@ jobs:
           AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
         run: |
           INTRO_PATH="$(mktemp -t yodex-intro-XXXXXX.mp3)"
+          INTRO_BRIDGE_PATH="$(mktemp -t yodex-intro-bridge-XXXXXX.mp3)"
           GAME_PATH="$(mktemp -t yodex-game-XXXXXX.mp3)"
           OUTRO_PATH="$(mktemp -t yodex-outro-XXXXXX.mp3)"
           OUT_DIR="out/${{ steps.date.outputs.path }}"
           aws s3 cp "s3://${AWS_S3_BUCKET}/music/intro.mp3" "${INTRO_PATH}"
+          aws s3 cp "s3://${AWS_S3_BUCKET}/music/intro_bridge.mp3" "${INTRO_BRIDGE_PATH}"
           aws s3 cp "s3://${AWS_S3_BUCKET}/music/game_intro.mp3" "${GAME_PATH}"
           aws s3 cp "s3://${AWS_S3_BUCKET}/music/outro.mp3" "${OUTRO_PATH}"
           ffmpeg -hide_banner -loglevel error -y \
             -i "${INTRO_PATH}" \
             -i "${OUT_DIR}/intro.mp3" \
+            -i "${INTRO_BRIDGE_PATH}" \
             -i "${OUT_DIR}/topic.mp3" \
             -i "${GAME_PATH}" \
             -i "${OUT_DIR}/game.mp3" \
             -i "${OUT_DIR}/outro.mp3" \
             -i "${OUTRO_PATH}" \
-            -filter_complex "[0:a][1:a][2:a][3:a][4:a][5:a][6:a]concat=n=7:v=0:a=1[full]" \
+            -filter_complex "[0:a][1:a][2:a][3:a][4:a][5:a][6:a][7:a]concat=n=8:v=0:a=1[full]" \
             -map "[full]" \
             "${OUT_DIR}/episode.with-music.mp3"
           mv "${OUT_DIR}/episode.with-music.mp3" "${OUT_DIR}/episode.mp3"
