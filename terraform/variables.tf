@@ -31,3 +31,8 @@ variable "github_branch" {
   description = "Branch allowed to assume the role"
   default     = "main"
 }
+
+variable "domain_name" {
+  type        = string
+  description = "Apex domain name for hosting the podcast"
+}

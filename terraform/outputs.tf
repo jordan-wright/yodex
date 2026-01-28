@@ -17,3 +17,20 @@ output "s3_prefix" {
   description = "S3 prefix used for uploads"
   value       = local.full_prefix
 }
+
+output "cloudfront_domain_name" {
+  description = "CloudFront domain for the podcast"
+  value       = aws_cloudfront_distribution.podcast.domain_name
+}
+
+output "acm_validation_records" {
+  description = "ACM DNS validation records to add in Cloudflare"
+  value = [
+    for dvo in aws_acm_certificate.podcast.domain_validation_options : {
+      domain = dvo.domain_name
+      name   = dvo.resource_record_name
+      type   = dvo.resource_record_type
+      value  = dvo.resource_record_value
+    }
+  ]
+}
