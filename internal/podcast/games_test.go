@@ -72,6 +72,22 @@ func TestChooseGameSundayFactOrFib(t *testing.T) {
 	}
 }
 
+func TestChooseGameTuesdayBuildItBrainstorm(t *testing.T) {
+	games := []GameRules{
+		{Name: "build-it-brainstorm", Rules: "build"},
+		{Name: "fact-or-fib", Rules: "fact"},
+		{Name: "would-you-rather", Rules: "rather"},
+	}
+	date := time.Date(2026, 1, 20, 0, 0, 0, 0, time.UTC) // Tuesday
+	game, err := ChooseGame(date, games)
+	if err != nil {
+		t.Fatalf("ChooseGame: %v", err)
+	}
+	if game.Name != "build-it-brainstorm" {
+		t.Fatalf("expected build-it-brainstorm on Tuesday, got %q", game.Name)
+	}
+}
+
 func TestBuildGamePrompt(t *testing.T) {
 	date := time.Date(2026, 1, 19, 0, 0, 0, 0, time.UTC) // Monday
 	system, user, err := BuildGamePrompt("Space", date, GameRules{Name: "mystery", Rules: "Rule"})
