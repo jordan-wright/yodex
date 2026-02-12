@@ -59,3 +59,41 @@ func TestTopicSectionUsesDirectTransitionInstructions(t *testing.T) {
 		t.Fatalf("expected immediate-topic transition guidance, got %q", instructions)
 	}
 }
+
+func TestIntroPromptIncludesTodayHolidayGuidance(t *testing.T) {
+	date := time.Date(2026, 2, 14, 0, 0, 0, 0, time.UTC) // Valentine's Day
+	sections := StandardSectionSchema("Meteorites", date)
+	prompt := sections[0].Prompt
+	if !strings.Contains(prompt, "today is Valentine's Day") {
+		t.Fatalf("expected holiday name in intro prompt, got %q", prompt)
+	}
+	if !strings.Contains(prompt, "If you're celebrating, I hope you have a wonderful holiday today.") {
+		t.Fatalf("expected today holiday wish in intro prompt, got %q", prompt)
+	}
+	if !strings.Contains(prompt, "Before introducing \"Meteorites\"") {
+		t.Fatalf("expected ordering guidance in intro prompt, got %q", prompt)
+	}
+}
+
+func TestOutroPromptIncludesTomorrowHolidayGuidance(t *testing.T) {
+	date := time.Date(2026, 2, 13, 0, 0, 0, 0, time.UTC) // Tomorrow is Valentine's Day
+	sections := StandardSectionSchema("Meteorites", date)
+	prompt := sections[2].Prompt
+	if !strings.Contains(prompt, "tomorrow is Valentine's Day") {
+		t.Fatalf("expected holiday name in outro prompt, got %q", prompt)
+	}
+	if !strings.Contains(prompt, "If you're celebrating, I hope you have a wonderful holiday tomorrow.") {
+		t.Fatalf("expected tomorrow holiday wish in outro prompt, got %q", prompt)
+	}
+}
+
+func TestPromptsDoNotMentionHolidayWhenNone(t *testing.T) {
+	date := time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC)
+	sections := StandardSectionSchema("Meteorites", date)
+	if strings.Contains(sections[0].Prompt, "If you're celebrating") {
+		t.Fatalf("did not expect holiday guidance in intro prompt, got %q", sections[0].Prompt)
+	}
+	if strings.Contains(sections[2].Prompt, "If you're celebrating") {
+		t.Fatalf("did not expect holiday guidance in outro prompt, got %q", sections[2].Prompt)
+	}
+}

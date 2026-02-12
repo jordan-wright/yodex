@@ -64,27 +64,44 @@ func buildTopicPrompt(topic string) string {
 }
 
 func buildIntroPrompt(topic string, date time.Time) string {
-	dateLabel := date.UTC().Format("Monday, January 2, 2006")
+	date = date.UTC()
+	dateLabel := date.Format("Monday, January 2, 2006")
 	dayPhrase := "day"
-	switch date.UTC().Weekday() {
+	switch date.Weekday() {
 	case time.Saturday, time.Sunday:
 		dayPhrase = "weekend"
 	}
-	return fmt.Sprintf(
+	prompt := fmt.Sprintf(
 		"Write a warm, friendly podcast welcome for kids that sounds like welcoming a group of friends. Greet listeners to the \"Curious World Podcast\" and introduce the host, Jessica. Mention today's date (%s) and say you hope everyone is having a wonderful %s. Keep it 3-5 sentences, upbeat, and welcoming. End with exactly one short sentence that introduces %q. Do not add a second teaser or additional lead-in sentence after that.",
 		dateLabel,
 		dayPhrase,
 		topic,
 	)
+	if holiday, ok := holidayOnDate(date); ok {
+		prompt += fmt.Sprintf(" Before introducing %q, briefly recognize that today is %s. Add one short, kid-friendly sentence about what the holiday celebrates (%s), then include: \"If you're celebrating, I hope you have a wonderful holiday today.\"",
+			topic,
+			holiday.Name,
+			holiday.Description,
+		)
+	}
+	return prompt
 }
 
 func buildOutroPrompt(topic string, date time.Time) string {
-	dateLabel := date.UTC().Format("Monday, January 2")
-	return fmt.Sprintf(
+	date = date.UTC()
+	dateLabel := date.Format("Monday, January 2")
+	prompt := fmt.Sprintf(
 		"Wrap up the episode about %q with a friendly recap and a thoughtful question for listeners. Use first-person voice as Jessica. Instead of a mechanical date callout, weave it into a warm wish like: \"I hope everyone has an amazing %s.\" Keep it 3-5 sentences.",
 		topic,
 		dateLabel,
 	)
+	if holiday, ok := holidayOnDate(date.AddDate(0, 0, 1)); ok {
+		prompt += fmt.Sprintf(" Also mention that tomorrow is %s. Add one short, kid-friendly sentence about what the holiday celebrates (%s), then include: \"If you're celebrating, I hope you have a wonderful holiday tomorrow.\"",
+			holiday.Name,
+			holiday.Description,
+		)
+	}
+	return prompt
 }
 
 // BuildSectionPrompt builds the user prompt for a single section.
@@ -167,5 +184,46 @@ func sectionHeading(sectionID string) string {
 		return "Outro"
 	default:
 		return strings.Title(strings.ReplaceAll(sectionID, "-", " "))
+	}
+}
+
+type holiday struct {
+	Name        string
+	Description string
+}
+
+func holidayOnDate(date time.Time) (holiday, bool) {
+	date = date.UTC()
+	month := date.Month()
+	day := date.Day()
+	weekday := date.Weekday()
+
+	switch {
+	case month == time.January && day == 1:
+		return holiday{Name: "New Year's Day", Description: "celebrating a new year and fresh starts"}, true
+	case month == time.January && weekday == time.Monday && day >= 15 && day <= 21:
+		return holiday{Name: "Martin Luther King Jr. Day", Description: "honoring Dr. King and his work for equality and justice"}, true
+	case month == time.February && day == 14:
+		return holiday{Name: "Valentine's Day", Description: "showing appreciation for loved ones, friends, and family"}, true
+	case month == time.February && weekday == time.Monday && day >= 15 && day <= 21:
+		return holiday{Name: "Presidents Day", Description: "remembering U.S. presidents and leadership in history"}, true
+	case month == time.May && weekday == time.Monday && day+7 > 31:
+		return holiday{Name: "Memorial Day", Description: "remembering service members who gave their lives"}, true
+	case month == time.June && day == 19:
+		return holiday{Name: "Juneteenth", Description: "celebrating freedom and Black American history"}, true
+	case month == time.July && day == 4:
+		return holiday{Name: "Independence Day", Description: "celebrating U.S. independence"}, true
+	case month == time.September && weekday == time.Monday && day <= 7:
+		return holiday{Name: "Labor Day", Description: "recognizing workers and the work people do"}, true
+	case month == time.October && day == 31:
+		return holiday{Name: "Halloween", Description: "a day for costumes, creativity, and community fun"}, true
+	case month == time.November && day == 11:
+		return holiday{Name: "Veterans Day", Description: "honoring military veterans and their service"}, true
+	case month == time.November && weekday == time.Thursday && day >= 22 && day <= 28:
+		return holiday{Name: "Thanksgiving", Description: "sharing gratitude, family time, and thankfulness"}, true
+	case month == time.December && day == 25:
+		return holiday{Name: "Christmas Day", Description: "celebrating Christmas traditions, giving, and time with loved ones"}, true
+	default:
+		return holiday{}, false
 	}
 }
