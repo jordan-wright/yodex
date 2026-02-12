@@ -71,7 +71,6 @@ Optional `config.json` at repo root:
   "textModel": "gpt-5-mini",
   "ttsModel": "gpt-4o-mini-tts",
   "ttsProvider": "openai",
-  "topicHistorySize": 10,
   "topicHistoryPath": "out/topic-history.json"
 }
 ```
@@ -83,7 +82,7 @@ Env vars override config (flags override both):
 - `YODEX_TTS_MODEL`, `YODEX_VOICE`, `YODEX_TEXT_MODEL`
 - `YODEX_DEBUG`, `YODEX_OVERWRITE`
 - `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_S3_PREFIX`
-- `YODEX_TOPIC_HISTORY_SIZE`, `YODEX_TOPIC_HISTORY_PATH`
+- `YODEX_TOPIC_HISTORY_PATH`
 
 Topic history is stored as `topic-history.json` in S3 when `AWS_S3_BUCKET` is
 set (under `AWS_S3_PREFIX/` if provided). When S3 is not configured, history is

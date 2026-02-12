@@ -126,7 +126,6 @@ generation and OpenAI TTS.
   "textModel": "gpt-5-mini",
   "ttsModel": "gpt-4o-mini-tts",
   "ttsProvider": "openai",
-  "topicHistorySize": 10,
   "topicHistoryPath": "out/topic-history.json"
 }
 ```
@@ -136,7 +135,7 @@ generation and OpenAI TTS.
   - `YODEX_TTS_PROVIDER`, `YODEX_TTS_MODEL`, `YODEX_TEXT_MODEL`, `YODEX_VOICE`
   - `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_S3_PREFIX`
   - `YODEX_DEBUG`, `YODEX_OVERWRITE`
-  - `YODEX_TOPIC_HISTORY_SIZE`, `YODEX_TOPIC_HISTORY_PATH`
+  - `YODEX_TOPIC_HISTORY_PATH`
 - Flags override env/config.
 
 ---

@@ -98,7 +98,6 @@ func TestSelectTopicIncludesHistoryInPrompt(t *testing.T) {
 	cfg := config.Default()
 	cfg.S3Bucket = "topic-history-bucket"
 	cfg.S3Prefix = "yodex"
-	cfg.TopicHistorySize = 3
 	fakeStore := &fakeTopicHistoryStore{
 		prefix:       cfg.S3Prefix,
 		downloadData: data,
@@ -128,7 +127,6 @@ func TestSelectTopicEmptyHistory(t *testing.T) {
 	cfg := config.Default()
 	cfg.S3Bucket = "topic-history-bucket"
 	cfg.S3Prefix = "yodex"
-	cfg.TopicHistorySize = 3
 	fakeStore := &fakeTopicHistoryStore{
 		prefix:      cfg.S3Prefix,
 		downloadErr: &types.NoSuchKey{},
@@ -151,7 +149,7 @@ func TestSelectTopicEmptyHistory(t *testing.T) {
 	}
 }
 
-func TestSelectTopicHistoryTruncation(t *testing.T) {
+func TestSelectTopicUsesFullHistory(t *testing.T) {
 	history := TopicHistory{
 		Entries: map[string]TopicHistoryEntry{
 			"2026-01-10": {Topic: "Rainforests"},
@@ -167,7 +165,6 @@ func TestSelectTopicHistoryTruncation(t *testing.T) {
 	cfg := config.Default()
 	cfg.S3Bucket = "topic-history-bucket"
 	cfg.S3Prefix = "yodex"
-	cfg.TopicHistorySize = 2
 	fakeStore := &fakeTopicHistoryStore{
 		prefix:       cfg.S3Prefix,
 		downloadData: data,
@@ -185,8 +182,8 @@ func TestSelectTopicHistoryTruncation(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if strings.Contains(gen.prompt, "- Rainforests") {
-		t.Fatalf("expected prompt to truncate history, got %q", gen.prompt)
+	if !strings.Contains(gen.prompt, "- Rainforests") {
+		t.Fatalf("expected prompt to include older history items, got %q", gen.prompt)
 	}
 	if !strings.Contains(gen.prompt, "- Gravity") || !strings.Contains(gen.prompt, "- Dinosaurs") {
 		t.Fatalf("expected prompt to include latest history items, got %q", gen.prompt)

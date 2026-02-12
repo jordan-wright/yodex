@@ -16,7 +16,7 @@ import (
 	"yodex/internal/storage"
 )
 
-// TopicHistoryEntry tracks recent topics to avoid repetition.
+// TopicHistoryEntry tracks prior topics to avoid repetition.
 type TopicHistoryEntry struct {
 	Topic string `json:"topic"`
 }
@@ -50,32 +50,12 @@ func saveTopicHistory(ctx context.Context, cfg config.Config, history TopicHisto
 	return saveTopicHistoryToFile(cfg, history)
 }
 
-func trimTopicHistory(history TopicHistory, size int) TopicHistory {
-	if size <= 0 {
-		return TopicHistory{Entries: map[string]TopicHistoryEntry{}}
-	}
-	if len(history.Entries) <= size {
-		return history
-	}
-	keys := sortedHistoryKeys(history)
-	keep := keys[len(keys)-size:]
-	trimmed := TopicHistory{Entries: make(map[string]TopicHistoryEntry, len(keep))}
-	for _, key := range keep {
-		trimmed.Entries[key] = history.Entries[key]
-	}
-	return trimmed
-}
-
 func appendTopicHistory(ctx context.Context, cfg config.Config, history TopicHistory, date time.Time, entry TopicHistoryEntry) error {
-	if cfg.TopicHistorySize <= 0 {
-		return nil
-	}
 	if history.Entries == nil {
 		history.Entries = make(map[string]TopicHistoryEntry)
 	}
 	dateKey := date.UTC().Format("2006-01-02")
 	history.Entries[dateKey] = entry
-	history = trimTopicHistory(history, cfg.TopicHistorySize)
 	return saveTopicHistory(ctx, cfg, history)
 }
 

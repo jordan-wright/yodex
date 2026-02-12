@@ -22,7 +22,6 @@ type Config struct {
 	TextModel        string `json:"textModel,omitempty"`
 	TTSModel         string `json:"ttsModel,omitempty"`
 	TTSProvider      string `json:"ttsProvider,omitempty"`
-	TopicHistorySize int    `json:"topicHistorySize,omitempty"`
 	TopicHistoryPath string `json:"topicHistoryPath,omitempty"`
 
 	// Not persisted to file; sourced from env only.
@@ -43,7 +42,6 @@ type Overrides struct {
 	TextModel        *string
 	TTSModel         *string
 	TTSProvider      *string
-	TopicHistorySize *int
 	TopicHistoryPath *string
 }
 
@@ -55,7 +53,6 @@ func Default() Config {
 		TextModel:        "gpt-5-mini",
 		TTSModel:         "gpt-4o-mini-tts",
 		TTSProvider:      "openai",
-		TopicHistorySize: 10,
 		TopicHistoryPath: filepath.Join("out", "topic-history.json"),
 	}
 }
@@ -116,11 +113,6 @@ func FromEnv() (Overrides, string, string) {
 	if v, ok := os.LookupEnv("YODEX_TTS_PROVIDER"); ok {
 		ov.TTSProvider = &[]string{v}[0]
 	}
-	if v, ok := os.LookupEnv("YODEX_TOPIC_HISTORY_SIZE"); ok {
-		if i, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
-			ov.TopicHistorySize = &[]int{i}[0]
-		}
-	}
 	if v, ok := os.LookupEnv("YODEX_TOPIC_HISTORY_PATH"); ok {
 		ov.TopicHistoryPath = &[]string{v}[0]
 	}
@@ -178,9 +170,6 @@ func Merge(fileCfg Config, env Overrides, flags Overrides, openAIKey string, ele
 		}
 		if ov.TTSProvider != nil {
 			cfg.TTSProvider = *ov.TTSProvider
-		}
-		if ov.TopicHistorySize != nil {
-			cfg.TopicHistorySize = *ov.TopicHistorySize
 		}
 		if ov.TopicHistoryPath != nil {
 			cfg.TopicHistoryPath = *ov.TopicHistoryPath

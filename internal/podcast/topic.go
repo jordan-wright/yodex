@@ -36,7 +36,6 @@ func SelectTopic(ctx context.Context, date time.Time, cfg config.Config, ai Text
 	if err != nil {
 		return "", err
 	}
-	history = trimTopicHistory(history, cfg.TopicHistorySize)
 	prompt := buildTopicHistoryPrompt(recentTopics(history))
 	text, err := ai.GenerateText(ctx, cfg.TextModel, topicSystemPrompt, prompt)
 	if err != nil {
@@ -67,7 +66,6 @@ func SelectTopicWithUsage(ctx context.Context, date time.Time, cfg config.Config
 	if err != nil {
 		return "", ai.TokenUsage{}, err
 	}
-	history = trimTopicHistory(history, cfg.TopicHistorySize)
 	prompt := buildTopicHistoryPrompt(recentTopics(history))
 
 	if withUsage, ok := gen.(TextGeneratorWithUsage); ok {
