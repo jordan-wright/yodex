@@ -16,6 +16,12 @@ func TestBuildScriptPrompts(t *testing.T) {
 	if !strings.Contains(user, "Clouds and Rain") {
 		t.Fatalf("expected topic in user prompt")
 	}
+	if !strings.Contains(user, "space before any tag") {
+		t.Fatalf("expected tag spacing guidance in user prompt")
+	}
+	if !strings.Contains(user, "When unsure, use [short pause]") {
+		t.Fatalf("expected pause guidance in user prompt")
+	}
 }
 
 func TestValidateSections(t *testing.T) {

@@ -13,3 +13,5 @@ Guidelines:
 - Facts should be surprising but understandable.
 - Explanations should be clear and encouraging.
 - No trick questions meant to confuse.
+- Keep each statement short (one sentence when possible).
+- Use [short pause] after each statement unless it invites imagination or reflection.
