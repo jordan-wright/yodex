@@ -6,7 +6,9 @@ import (
 	"time"
 )
 
-const transitionPromptSuffix = "Continue as if you are finishing the previous thought, no headings, no resets. Do not repeat the greeting."
+const defaultTransitionPromptSuffix = "Continue as if you are finishing the previous thought, no headings, no resets. Do not repeat the greeting."
+
+const topicTransitionPromptSuffix = "Continue directly from the intro with no reset. Do not add another greeting, teaser, or second lead-in. Start teaching the topic in the first sentence."
 
 var standardSectionIDs = []string{
 	"intro",
@@ -42,17 +44,17 @@ func StandardSectionSchema(topic string, date time.Time) []SectionSpec {
 		{
 			SectionID:              "intro",
 			Prompt:                 buildIntroPrompt(topic, date),
-			TransitionInstructions: transitionPromptSuffix,
+			TransitionInstructions: defaultTransitionPromptSuffix,
 		},
 		{
 			SectionID:              "topic",
 			Prompt:                 buildTopicPrompt(topic),
-			TransitionInstructions: transitionPromptSuffix,
+			TransitionInstructions: topicTransitionPromptSuffix,
 		},
 		{
 			SectionID:              "outro",
 			Prompt:                 buildOutroPrompt(topic, date),
-			TransitionInstructions: transitionPromptSuffix,
+			TransitionInstructions: defaultTransitionPromptSuffix,
 		},
 	}
 }
@@ -69,7 +71,7 @@ func buildIntroPrompt(topic string, date time.Time) string {
 		dayPhrase = "weekend"
 	}
 	return fmt.Sprintf(
-		"Write a warm, friendly podcast welcome for kids that sounds like welcoming a group of friends. Greet listeners to the \"Curious World Podcast\" and introduce the host, Jessica. Mention today's date (%s) and say you hope everyone is having a wonderful %s. Keep it 3-5 sentences, upbeat, and welcoming. Do not dive into the topic yet; let listeners know you're about to jump into %q right away.",
+		"Write a warm, friendly podcast welcome for kids that sounds like welcoming a group of friends. Greet listeners to the \"Curious World Podcast\" and introduce the host, Jessica. Mention today's date (%s) and say you hope everyone is having a wonderful %s. Keep it 3-5 sentences, upbeat, and welcoming. End with exactly one short sentence that introduces %q. Do not add a second teaser or additional lead-in sentence after that.",
 		dateLabel,
 		dayPhrase,
 		topic,
