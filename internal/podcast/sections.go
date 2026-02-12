@@ -68,6 +68,8 @@ func buildIntroPrompt(topic string, date time.Time) string {
 	dateLabel := date.Format("Monday, January 2, 2006")
 	dayPhrase := "day"
 	switch date.Weekday() {
+	case time.Friday:
+		dayPhrase = "Fri-YAY!"
 	case time.Saturday, time.Sunday:
 		dayPhrase = "weekend"
 	}

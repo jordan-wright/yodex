@@ -33,6 +33,15 @@ func TestIntroPromptIncludesWeekday(t *testing.T) {
 	}
 }
 
+func TestIntroPromptIncludesFriYayOnFriday(t *testing.T) {
+	date := time.Date(2026, 1, 23, 0, 0, 0, 0, time.UTC) // Friday
+	sections := StandardSectionSchema("Volcanoes", date)
+	prompt := sections[0].Prompt
+	if !strings.Contains(prompt, "Fri-YAY!") {
+		t.Fatalf("expected Fri-YAY phrasing, got %q", prompt)
+	}
+}
+
 func TestIntroPromptRequiresSingleLeadIn(t *testing.T) {
 	date := time.Date(2026, 1, 19, 0, 0, 0, 0, time.UTC)
 	sections := StandardSectionSchema("Volcanoes", date)
