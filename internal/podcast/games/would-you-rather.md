@@ -15,3 +15,10 @@ Guidelines:
 - Avoid scary or stressful outcomes.
 - Encourage imagination and curiosity.
 - There is no right or wrong answer. If the host mentions a preference, frame it as their personal pick.
+- Use this fixed structure for consistency:
+  - "Here's your would-you-rather:"
+  - "Option A: ..."
+  - "Or Option B: ..."
+  - "Which one would you pick? [long pause]"
+  - React with a generic affirmation that does not assume a specific choice.
+  - Explore A briefly, then explore B briefly.

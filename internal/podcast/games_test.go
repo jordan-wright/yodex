@@ -100,6 +100,12 @@ func TestBuildGamePrompt(t *testing.T) {
 	if !containsAll(user, []string{"Weekday: Monday", "Topic: Space", "Game: mystery", "Then give a short, friendly summary", "Game rules:\nRule"}) {
 		t.Fatalf("missing rules in prompt: %q", user)
 	}
+	if !strings.Contains(system, "Do not stack multiple pauses for the same question.") {
+		t.Fatalf("missing pause guardrail in system prompt: %q", system)
+	}
+	if !strings.Contains(system, "Ask only one decision question per interaction beat.") {
+		t.Fatalf("missing interaction guardrail in system prompt: %q", system)
+	}
 }
 
 func containsAll(s string, parts []string) bool {
