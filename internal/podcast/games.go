@@ -79,9 +79,13 @@ func ChooseGame(date time.Time, games []GameRules) (GameRules, error) {
 
 func weekdayGameMap() map[time.Weekday]string {
 	return map[time.Weekday]string{
-		time.Sunday:   "fact-or-fib",
-		time.Tuesday:  "build-it-brainstorm",
-		time.Saturday: "build-it-brainstorm",
+		time.Sunday:    "fact-or-fib",
+		time.Monday:    "fact-or-fib",
+		time.Tuesday:   "build-it-brainstorm",
+		time.Wednesday: "build-it-brainstorm",
+		time.Thursday:  "what-am-i",
+		time.Friday:    "would-you-rather",
+		time.Saturday:  "build-it-brainstorm",
 	}
 }
 

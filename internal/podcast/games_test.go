@@ -37,7 +37,6 @@ func TestChooseGameDeterministic(t *testing.T) {
 		{Name: "a", Rules: "a"},
 		{Name: "b", Rules: "b"},
 		{Name: "c", Rules: "c"},
-		{Name: "fact-or-fib", Rules: "fact"},
 	}
 	date := time.Date(2026, 1, 19, 0, 0, 0, 0, time.UTC) // Monday
 	first, err := ChooseGame(date, games)
@@ -53,6 +52,23 @@ func TestChooseGameDeterministic(t *testing.T) {
 	}
 	if first.Name != games[int(date.Weekday())%len(games)].Name {
 		t.Fatalf("unexpected weekday selection: %q", first.Name)
+	}
+}
+
+func TestChooseGameThursdayWhatAmI(t *testing.T) {
+	games := []GameRules{
+		{Name: "build-it-brainstorm", Rules: "build"},
+		{Name: "fact-or-fib", Rules: "fact"},
+		{Name: "what-am-i", Rules: "what"},
+		{Name: "would-you-rather", Rules: "rather"},
+	}
+	date := time.Date(2026, 1, 22, 0, 0, 0, 0, time.UTC) // Thursday
+	game, err := ChooseGame(date, games)
+	if err != nil {
+		t.Fatalf("ChooseGame: %v", err)
+	}
+	if game.Name != "what-am-i" {
+		t.Fatalf("expected what-am-i on Thursday, got %q", game.Name)
 	}
 }
 
