@@ -234,10 +234,6 @@ func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, 
 	slog.Info("rendering markdown")
 	markdown := episode.RenderMarkdown()
 	wordCount := podcast.WordCount(markdown)
-	slog.Info("running safety check", "wordCount", wordCount)
-	if err := podcast.BasicSafetyCheck(markdown); err != nil {
-		return podcast.Episode{}, 0, ai.TokenUsage{}, err
-	}
 	return episode, wordCount, usage, nil
 }
 

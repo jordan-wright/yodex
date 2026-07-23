@@ -7,7 +7,7 @@
 - [x] OpenAI SDK client wrapper (Responses API + TTS) and token usage tracking (`internal/ai/openai.go`, `internal/ai/usage.go`).
 - [x] ElevenLabs TTS client and provider selection (`internal/ai/elevenlabs.go`, `cmd/yodex/audio.go`).
 - [x] Topic selection with S3 or local JSON history storage (`internal/podcast/topic.go`, `internal/podcast/topic_history.go`).
-- [x] Script generation via sectioned prompts (intro/topic/game/brain-bite/wild-fact/outro), continuity anchors, Markdown rendering, and basic lexical safety check (`cmd/yodex/script.go`, `internal/podcast/*`).
+- [x] Script generation via sectioned prompts (intro/topic/game/brain-bite/wild-fact/outro), continuity anchors, Markdown rendering, and kid-safe generation prompts (`cmd/yodex/script.go`, `internal/podcast/*`).
 - [x] Audio generation reads section files (fallback `episode.md`) and writes `episode.mp3` plus per-section MP3s (`cmd/yodex/audio.go`).
 - [x] S3 uploader with dated keys and latest copies; optional script/meta upload (`internal/storage/s3.go`, `cmd/yodex/publish.go`).
 - [x] GitHub Actions workflows for daily runs and tests (`.github/workflows/daily.yml`, `.github/workflows/go-test.yml`).
@@ -17,7 +17,7 @@
 - [ ] Script structure: DESIGN expects Intro/Main/Fun Facts/Jokes/Recap/Question; current sections are Intro/Topic/Game/Brain Bite/Wild Fact/Outro.
 - [ ] Word-count enforcement and retry logic are not implemented.
 - [ ] Structured JSON output (`episode.raw.json`) is not generated, but the workflow tries to upload it.
-- [ ] Safety API integration (moderation) is not implemented; only lexical scan exists.
+- [ ] Safety API integration (moderation) is not implemented; content guidance currently relies on generation prompts.
 
 ## Backlog / Future Tasks
 - [ ] Documentation polish (no `README.md` yet): local usage, env vars, GitHub variables/secrets, and troubleshooting.

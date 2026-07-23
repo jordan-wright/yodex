@@ -40,12 +40,3 @@ func TestWordCount(t *testing.T) {
 		t.Fatalf("unexpected word count: %d", count)
 	}
 }
-
-func TestBasicSafetyCheck(t *testing.T) {
-	if err := BasicSafetyCheck("This is safe."); err != nil {
-		t.Fatalf("unexpected safety error: %v", err)
-	}
-	if err := BasicSafetyCheck("Avoid a bomb."); err == nil {
-		t.Fatalf("expected unsafe term error")
-	}
-}

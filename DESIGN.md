@@ -33,7 +33,7 @@ generation and OpenAI TTS.
   - Track weekly Brain Bite topics and same-week coverage in S3 (when configured) or a local JSON file.
   - Generate a short, topic-independent Wild Fact and track prior facts to avoid repeats.
   - Save transcript and per-section files.
-  - Run a basic lexical safety check.
+  - Use kid-safe generation prompts for content guidance.
 - TTS synthesis:
   - Convert the script to MP3 using OpenAI or ElevenLabs.
   - Configurable voice and model, defaulting to `alloy` and `gpt-4o-mini-tts`.

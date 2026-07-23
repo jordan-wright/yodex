@@ -127,27 +127,3 @@ func headingLevel(line string) int {
 	}
 	return level
 }
-
-var safetyTerms = []string{
-	"suicide",
-	"self-harm",
-	"bomb",
-	"explosive",
-	"gun",
-	"weapon",
-	"poison",
-	"cocaine",
-	"heroin",
-	"sexual",
-}
-
-// BasicSafetyCheck performs a simple lexical scan for unsafe terms.
-func BasicSafetyCheck(text string) error {
-	lower := strings.ToLower(text)
-	for _, term := range safetyTerms {
-		if strings.Contains(lower, term) {
-			return fmt.Errorf("unsafe term detected: %s", term)
-		}
-	}
-	return nil
-}
