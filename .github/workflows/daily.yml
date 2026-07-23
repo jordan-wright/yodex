@@ -61,6 +61,7 @@ jobs:
           AWS_S3_PREFIX: ${{ secrets.AWS_S3_PREFIX }}
           AWS_REGION: ${{ vars.AWS_REGION }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          YODEX_TEXT_MODEL: ${{ vars.YODEX_TEXT_MODEL }}
         run: |
           go run ./cmd/yodex script --date=${{ steps.date.outputs.value }}
 
