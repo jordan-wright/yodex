@@ -52,6 +52,7 @@ func TestFromEnv(t *testing.T) {
 	t.Setenv("YODEX_DEBUG", "1")
 	t.Setenv("YODEX_BRAIN_BITE_TOPIC", "Animal Homes")
 	t.Setenv("YODEX_BRAIN_BITE_HISTORY_PATH", "tmp/brain-bites.json")
+	t.Setenv("YODEX_WILD_FACT_HISTORY_PATH", "tmp/wild-facts.json")
 	t.Setenv("OPENAI_API_KEY", "sk-xyz")
 	t.Setenv("ELEVENLABS_API_KEY", "el-123")
 	ov, key, elevenLabsKey := FromEnv()
@@ -66,6 +67,9 @@ func TestFromEnv(t *testing.T) {
 	}
 	if ov.BrainBiteHistoryPath == nil || *ov.BrainBiteHistoryPath != "tmp/brain-bites.json" {
 		t.Fatalf("brain bite history path not read from env")
+	}
+	if ov.WildFactHistoryPath == nil || *ov.WildFactHistoryPath != "tmp/wild-facts.json" {
+		t.Fatalf("wild fact history path not read from env")
 	}
 	if key != "sk-xyz" {
 		t.Fatalf("apikey not read from env")

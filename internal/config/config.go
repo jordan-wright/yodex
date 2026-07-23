@@ -25,6 +25,7 @@ type Config struct {
 	TTSProvider          string `json:"ttsProvider,omitempty"`
 	TopicHistoryPath     string `json:"topicHistoryPath,omitempty"`
 	BrainBiteHistoryPath string `json:"brainBiteHistoryPath,omitempty"`
+	WildFactHistoryPath  string `json:"wildFactHistoryPath,omitempty"`
 
 	// Not persisted to file; sourced from env only.
 	OpenAIAPIKey     string `json:"-"`
@@ -47,6 +48,7 @@ type Overrides struct {
 	TTSProvider          *string
 	TopicHistoryPath     *string
 	BrainBiteHistoryPath *string
+	WildFactHistoryPath  *string
 }
 
 func Default() Config {
@@ -59,6 +61,7 @@ func Default() Config {
 		TTSProvider:          "openai",
 		TopicHistoryPath:     filepath.Join("out", "topic-history.json"),
 		BrainBiteHistoryPath: filepath.Join("out", "brain-bite-history.json"),
+		WildFactHistoryPath:  filepath.Join("out", "wild-fact-history.json"),
 	}
 }
 
@@ -127,6 +130,9 @@ func FromEnv() (Overrides, string, string) {
 	if v, ok := os.LookupEnv("YODEX_BRAIN_BITE_HISTORY_PATH"); ok {
 		ov.BrainBiteHistoryPath = &[]string{v}[0]
 	}
+	if v, ok := os.LookupEnv("YODEX_WILD_FACT_HISTORY_PATH"); ok {
+		ov.WildFactHistoryPath = &[]string{v}[0]
+	}
 	apiKey = os.Getenv("OPENAI_API_KEY")
 	elevenLabsKey = os.Getenv("ELEVENLABS_API_KEY")
 	return ov, apiKey, elevenLabsKey
@@ -190,6 +196,9 @@ func Merge(fileCfg Config, env Overrides, flags Overrides, openAIKey string, ele
 		}
 		if ov.BrainBiteHistoryPath != nil {
 			cfg.BrainBiteHistoryPath = *ov.BrainBiteHistoryPath
+		}
+		if ov.WildFactHistoryPath != nil {
+			cfg.WildFactHistoryPath = *ov.WildFactHistoryPath
 		}
 	}
 

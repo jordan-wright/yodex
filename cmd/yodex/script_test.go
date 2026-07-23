@@ -61,8 +61,8 @@ func TestScriptWritesOutputs(t *testing.T) {
 	if code := run([]string{"script", "--date=2025-09-30", "--topic=Test Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
-	if fake.calls != 7 {
-		t.Fatalf("expected 7 AI calls, got %d", fake.calls)
+	if fake.calls != 8 {
+		t.Fatalf("expected 8 AI calls, got %d", fake.calls)
 	}
 
 	date := time.Date(2025, 9, 30, 0, 0, 0, 0, time.UTC)
@@ -73,6 +73,7 @@ func TestScriptWritesOutputs(t *testing.T) {
 	topicPath := builder.EpisodeSectionMarkdown(date, "topic")
 	gamePath := builder.EpisodeSectionMarkdown(date, "game")
 	brainBitePath := builder.EpisodeSectionMarkdown(date, "brain-bite")
+	wildFactPath := builder.EpisodeSectionMarkdown(date, "wild-fact")
 	outroPath := builder.EpisodeSectionMarkdown(date, "outro")
 
 	if _, err := os.Stat(mdPath); err != nil {
@@ -89,6 +90,9 @@ func TestScriptWritesOutputs(t *testing.T) {
 	}
 	if _, err := os.Stat(brainBitePath); err != nil {
 		t.Fatalf("missing brain-bite.md: %v", err)
+	}
+	if _, err := os.Stat(wildFactPath); err != nil {
+		t.Fatalf("missing wild-fact.md: %v", err)
 	}
 	if _, err := os.Stat(outroPath); err != nil {
 		t.Fatalf("missing outro.md: %v", err)
@@ -136,8 +140,8 @@ func TestScriptAcceptsShorterScripts(t *testing.T) {
 	if code := run([]string{"script", "--date=2025-09-30", "--topic=Retry Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
-	if fake.calls != 7 {
-		t.Fatalf("expected 7 AI calls, got %d", fake.calls)
+	if fake.calls != 8 {
+		t.Fatalf("expected 8 AI calls, got %d", fake.calls)
 	}
 }
 
@@ -149,6 +153,7 @@ func makeSectionResponses(targetWords int) []string {
 			{SectionID: "topic", Text: "Topic text."},
 			{SectionID: "game", Text: "Game text."},
 			{SectionID: "brain-bite", Text: "Brain bite text."},
+			{SectionID: "wild-fact", Text: "Wild fact text."},
 			{SectionID: "outro", Text: "Recap text. What did you learn?"},
 		},
 	}
@@ -166,6 +171,7 @@ func makeSectionResponses(targetWords int) []string {
 		"Monday starter\nTuesday follow-up\nWednesday deep dive\nThursday examples\nFriday compare and contrast\nSaturday surprising facts\nSunday recap",
 		ep.Sections[3].Text,
 		ep.Sections[4].Text,
+		ep.Sections[5].Text,
 	}
 }
 

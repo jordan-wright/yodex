@@ -29,8 +29,9 @@ generation and OpenAI TTS.
   - Else, use OpenAI to propose a topic appropriate for an elementary-age child.
   - Track recent topics in S3 (when configured) or a local JSON file.
 - Script generation:
-  - Generate sections for intro, topic (core + deep dive), brain game, Brain Bite, and outro.
+  - Generate sections for intro, topic (core + deep dive), brain game, Brain Bite, Wild Fact, and outro.
   - Track weekly Brain Bite topics and same-week coverage in S3 (when configured) or a local JSON file.
+  - Generate a short, topic-independent Wild Fact and track prior facts to avoid repeats.
   - Save transcript and per-section files.
   - Run a basic lexical safety check.
 - TTS synthesis:
@@ -82,7 +83,7 @@ generation and OpenAI TTS.
 
 ## Prompting (Current Implementation)
 - System prompt: fixed kid-safe guidance.
-- User prompt: sectioned prompts for `intro`, `topic`, `game`, `brain-bite`, and `outro`,
+- User prompt: sectioned prompts for `intro`, `topic`, `game`, `brain-bite`, `wild-fact`, and `outro`,
   with continuity anchors between sections.
 - Section text is generated without headings; Markdown headings are added during
   rendering.
@@ -148,7 +149,7 @@ generation and OpenAI TTS.
   1. Checkout + setup Go.
   2. `yodex script --date=UTC_TODAY` → upload `episode.md`, `meta.json` as artifacts.
   3. `yodex audio --date=UTC_TODAY` → upload `episode.mp3` as artifact.
-  4. Add intro, topic bridge, game, Brain Bite, and outro music around the section MP3s.
+  4. Add intro, topic bridge, game, and Brain Bite music around the section MP3s; keep the Wild Fact as a short narration-only transition into the outro.
   5. `yodex publish --date=UTC_TODAY` → print and save the public URL.
 - Repo variables: `YODEX_TTS_PROVIDER`, `YODEX_TTS_MODEL`, `YODEX_VOICE`,
   `AWS_REGION`.

@@ -22,7 +22,7 @@ This repository contains a Go codebase with supporting infrastructure definition
   - `internal/ai`: AI client interfaces and the OpenAI-backed implementation for text, JSON, and TTS generation, including token usage tracking.
   - `internal/config`: Configuration defaults, file/env/flag merging, and validation for script, audio, and publish workflows.
   - `internal/paths`: Output path builder helpers and overwrite checks for generated episode artifacts.
-  - `internal/podcast`: Episode schema, prompt building, safety checks, section generation helpers, topic selection with history tracking, brain games, and weekly Brain Bite history.
+  - `internal/podcast`: Episode schema, prompt building, safety checks, section generation helpers, topic selection with history tracking, brain games, weekly Brain Bite history, and Wild Fact history.
   - `internal/storage`: S3 uploader and key helpers for publishing episode artifacts.
 - `terraform/`: Infrastructure as code.
 - `Makefile`: Common developer tasks.

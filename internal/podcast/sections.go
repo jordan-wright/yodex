@@ -15,6 +15,7 @@ var standardSectionIDs = []string{
 	"topic",
 	"game",
 	"brain-bite",
+	"wild-fact",
 	"outro",
 }
 
@@ -185,6 +186,8 @@ func sectionHeading(sectionID string) string {
 		return "Brain Game"
 	case "brain-bite":
 		return "Brain Bite"
+	case "wild-fact":
+		return "Wild Fact"
 	case "outro":
 		return "Outro"
 	default:

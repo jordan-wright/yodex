@@ -200,6 +200,18 @@ func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, 
 	episodeSections = append(episodeSections, brainBiteSection)
 	anchor = podcast.BuildContinuityAnchor(brainBiteSection.Text, brainBiteSection.SectionID)
 
+	wildFactText, wildFactUsage, err := generateWildFact(ctx, date, client, cfg, topic, anchor)
+	if err != nil {
+		return podcast.Episode{}, 0, ai.TokenUsage{}, err
+	}
+	usage = usage.Add(wildFactUsage)
+	wildFactSection := podcast.EpisodeSection{
+		SectionID: "wild-fact",
+		Text:      wildFactText,
+	}
+	episodeSections = append(episodeSections, wildFactSection)
+	anchor = podcast.BuildContinuityAnchor(wildFactSection.Text, wildFactSection.SectionID)
+
 	outroSpec, ok := sectionSpecs["outro"]
 	if !ok {
 		return podcast.Episode{}, 0, ai.TokenUsage{}, errors.New("missing section spec: outro")
@@ -281,5 +293,17 @@ func generateBrainBite(ctx context.Context, date time.Time, client ai.TextClient
 		return "", ai.TokenUsage{}, err
 	}
 	slog.Info("brain bite received", "elapsed", time.Since(callStart).String())
+	return strings.TrimSpace(text), usage, nil
+}
+
+func generateWildFact(ctx context.Context, date time.Time, client ai.TextClient, cfg cfgpkg.Config, topic, continuity string) (string, ai.TokenUsage, error) {
+	slog.Info("generating wild fact")
+	callStart := time.Now()
+	text, usage, err := podcast.GenerateWildFactWithUsage(ctx, date, cfg, client, topic, continuity)
+	if err != nil {
+		slog.Error("wild fact call failed", "elapsed", time.Since(callStart).String(), "err", err)
+		return "", ai.TokenUsage{}, err
+	}
+	slog.Info("wild fact received", "elapsed", time.Since(callStart).String())
 	return strings.TrimSpace(text), usage, nil
 }

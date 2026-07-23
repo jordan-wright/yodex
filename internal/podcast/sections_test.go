@@ -71,7 +71,7 @@ func TestTopicSectionUsesDirectTransitionInstructions(t *testing.T) {
 
 func TestStandardSectionIDsIncludesBrainBite(t *testing.T) {
 	ids := StandardSectionIDs()
-	expected := []string{"intro", "topic", "game", "brain-bite", "outro"}
+	expected := []string{"intro", "topic", "game", "brain-bite", "wild-fact", "outro"}
 	if len(ids) != len(expected) {
 		t.Fatalf("expected %d section IDs, got %d", len(expected), len(ids))
 	}

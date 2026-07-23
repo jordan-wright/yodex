@@ -109,9 +109,10 @@ jobs:
             -i "${OUT_DIR}/game.mp3" \
             -i "${BRAIN_BITE_PATH}" \
             -i "${OUT_DIR}/brain-bite.mp3" \
+            -i "${OUT_DIR}/wild-fact.mp3" \
             -i "${OUT_DIR}/outro.mp3" \
             -i "${OUTRO_PATH}" \
-            -filter_complex "[0:a][1:a][2:a][3:a][4:a][5:a][6:a][7:a][8:a][9:a]concat=n=10:v=0:a=1[full]" \
+            -filter_complex "[0:a][1:a][2:a][3:a][4:a][5:a][6:a][7:a][8:a][9:a][10:a]concat=n=11:v=0:a=1[full]" \
             -map "[full]" \
             "${OUT_DIR}/episode.with-music.mp3"
           mv "${OUT_DIR}/episode.with-music.mp3" "${OUT_DIR}/episode.mp3"
