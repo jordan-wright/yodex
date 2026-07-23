@@ -85,7 +85,7 @@ func weekdayGameMap() map[time.Weekday]string {
 	}
 }
 
-const gameSystemPrompt = "You are a friendly, curious podcast host creating an audio-only daily game for kids ages 7–9.\n\n" +
+const gameSystemPrompt = "You are a friendly, curious podcast host creating an audio-only daily game for elementary-age children.\n\n" +
 	"The following game rules will be provided. Read and follow them exactly.\n\n" +
 	"Your task:\n" +
 	"- Produce ONE complete round of the game.\n" +

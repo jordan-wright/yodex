@@ -61,8 +61,8 @@ func TestScriptWritesOutputs(t *testing.T) {
 	if code := run([]string{"script", "--date=2025-09-30", "--topic=Test Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
-	if fake.calls != 4 {
-		t.Fatalf("expected 4 AI calls, got %d", fake.calls)
+	if fake.calls != 7 {
+		t.Fatalf("expected 7 AI calls, got %d", fake.calls)
 	}
 
 	date := time.Date(2025, 9, 30, 0, 0, 0, 0, time.UTC)
@@ -72,6 +72,7 @@ func TestScriptWritesOutputs(t *testing.T) {
 	introPath := builder.EpisodeSectionMarkdown(date, "intro")
 	topicPath := builder.EpisodeSectionMarkdown(date, "topic")
 	gamePath := builder.EpisodeSectionMarkdown(date, "game")
+	brainBitePath := builder.EpisodeSectionMarkdown(date, "brain-bite")
 	outroPath := builder.EpisodeSectionMarkdown(date, "outro")
 
 	if _, err := os.Stat(mdPath); err != nil {
@@ -85,6 +86,9 @@ func TestScriptWritesOutputs(t *testing.T) {
 	}
 	if _, err := os.Stat(gamePath); err != nil {
 		t.Fatalf("missing game.md: %v", err)
+	}
+	if _, err := os.Stat(brainBitePath); err != nil {
+		t.Fatalf("missing brain-bite.md: %v", err)
 	}
 	if _, err := os.Stat(outroPath); err != nil {
 		t.Fatalf("missing outro.md: %v", err)
@@ -132,8 +136,8 @@ func TestScriptAcceptsShorterScripts(t *testing.T) {
 	if code := run([]string{"script", "--date=2025-09-30", "--topic=Retry Topic"}); code != 0 {
 		t.Fatalf("script returned non-zero: %d", code)
 	}
-	if fake.calls != 4 {
-		t.Fatalf("expected 4 AI calls, got %d", fake.calls)
+	if fake.calls != 7 {
+		t.Fatalf("expected 7 AI calls, got %d", fake.calls)
 	}
 }
 
@@ -144,6 +148,7 @@ func makeSectionResponses(targetWords int) []string {
 			{SectionID: "intro", Text: "Intro text."},
 			{SectionID: "topic", Text: "Topic text."},
 			{SectionID: "game", Text: "Game text."},
+			{SectionID: "brain-bite", Text: "Brain bite text."},
 			{SectionID: "outro", Text: "Recap text. What did you learn?"},
 		},
 	}
@@ -156,8 +161,11 @@ func makeSectionResponses(targetWords int) []string {
 	return []string{
 		ep.Sections[0].Text,
 		ep.Sections[1].Text,
-		ep.Sections[3].Text,
 		ep.Sections[2].Text,
+		"Weekly Brain Bite Topic",
+		"Monday starter\nTuesday follow-up\nWednesday deep dive\nThursday examples\nFriday compare and contrast\nSaturday surprising facts\nSunday recap",
+		ep.Sections[3].Text,
+		ep.Sections[4].Text,
 	}
 }
 

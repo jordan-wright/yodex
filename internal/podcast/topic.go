@@ -21,7 +21,7 @@ type TextGeneratorWithUsage interface {
 	GenerateTextWithUsage(ctx context.Context, model, system, prompt string) (string, ai.TokenUsage, error)
 }
 
-const topicSystemPrompt = "You propose safe, accurate science topics for advanced 7-year-olds."
+const topicSystemPrompt = "You propose safe, accurate science topics for elementary-age children."
 
 // SelectTopic returns the configured topic or proposes one via the AI client.
 func SelectTopic(ctx context.Context, date time.Time, cfg config.Config, ai TextGenerator) (string, error) {
@@ -102,10 +102,10 @@ func SelectTopicWithUsage(ctx context.Context, date time.Time, cfg config.Config
 }
 
 func buildTopicHistoryPrompt(recent []string) string {
-	prompt := "Propose a single science topic for an advanced 7-year-old. " +
+	prompt := "Propose a single science topic for an elementary-age child. " +
 		"Examples of topics: animals, cultural celebrations, science, astronomy, history, geography, physics, chemistry, biology, or nature. " +
-		"The topic should be interesting and engaging for a 7-year-old. " +
-		"The topic should be safe and appropriate for a 7-year-old. " +
+		"The topic should be interesting and engaging for an elementary-age child. " +
+		"The topic should be safe and appropriate for an elementary-age child. " +
 		"You may focus on a specific animal, plant, planet, star, or some other specific thing to do a deep-dive, or you may focus on a general science topic. " +
 		"The topic should be accurate and up to date. " +
 		"Reply with a short title only."

@@ -73,10 +73,11 @@ func TestAudioWritesMP3(t *testing.T) {
 		t.Fatalf("EnsureOutDir: %v", err)
 	}
 	sectionData := map[string]string{
-		"intro": "Hello there. [short pause] Ready to explore?",
-		"topic": "Topic time. [long pause] Nice idea.",
-		"game":  "Game time.",
-		"outro": "Bye.",
+		"intro":      "Hello there. [short pause] Ready to explore?",
+		"topic":      "Topic time. [long pause] Nice idea.",
+		"game":       "Game time.",
+		"brain-bite": "Brain bite time.",
+		"outro":      "Bye.",
 	}
 	for section, text := range sectionData {
 		sectionPath := builder.EpisodeSectionMarkdown(date, section)
@@ -89,8 +90,8 @@ func TestAudioWritesMP3(t *testing.T) {
 	if code := run([]string{"audio", "--date=2025-09-30", "--voice=alloy"}); code != 0 {
 		t.Fatalf("audio returned non-zero: %d", code)
 	}
-	if fake.calls != 6 {
-		t.Fatalf("expected 6 TTS calls, got %d", fake.calls)
+	if fake.calls != 7 {
+		t.Fatalf("expected 7 TTS calls, got %d", fake.calls)
 	}
 
 	mp3Path := builder.EpisodeMP3(date)
@@ -98,7 +99,7 @@ func TestAudioWritesMP3(t *testing.T) {
 	if err != nil {
 		t.Fatalf("missing episode.mp3: %v", err)
 	}
-	expectedSize := int64(len("mp3bytes")*6 + len("pausebytes") + len("shortbytes"))
+	expectedSize := int64(len("mp3bytes")*7 + len("pausebytes") + len("shortbytes"))
 	if info.Size() != expectedSize {
 		t.Fatalf("unexpected episode.mp3 size: %d", info.Size())
 	}

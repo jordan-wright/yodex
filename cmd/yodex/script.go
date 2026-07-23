@@ -89,7 +89,7 @@ func cmdScript(args []string) error {
 	}
 	slog.Info("prompts built")
 
-	episode, wordCount, usage, err := generateEpisode(ctx, date, client, cfg.TextModel, system, user, topicText)
+	episode, wordCount, usage, err := generateEpisode(ctx, date, client, cfg, system, user, topicText)
 	if err != nil {
 		return err
 	}
@@ -151,61 +151,69 @@ func cmdScript(args []string) error {
 	return nil
 }
 
-func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, model, system, basePrompt, topic string) (podcast.Episode, int, ai.TokenUsage, error) {
+func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, cfg cfgpkg.Config, system, basePrompt, topic string) (podcast.Episode, int, ai.TokenUsage, error) {
 	sections := podcast.StandardSectionSchema(topic, date)
-	episodeSections := make([]podcast.EpisodeSection, 0, len(sections)+1)
+	sectionSpecs := make(map[string]podcast.SectionSpec, len(sections))
+	for _, spec := range sections {
+		sectionSpecs[spec.SectionID] = spec
+	}
+
+	episodeSections := make([]podcast.EpisodeSection, 0, len(podcast.StandardSectionIDs()))
 	var usage ai.TokenUsage
 	var anchor string
 
-	for i, spec := range sections {
-		if i > 0 {
-			spec.ContinuityContext = anchor
+	for _, sectionID := range []string{"intro", "topic"} {
+		spec, ok := sectionSpecs[sectionID]
+		if !ok {
+			return podcast.Episode{}, 0, ai.TokenUsage{}, errors.New("missing section spec: " + sectionID)
 		}
-		userPrompt := podcast.BuildSectionPrompt(basePrompt, spec)
-		slog.Info("generating episode section", "sectionID", spec.SectionID)
-		callStart := time.Now()
-		text, callUsage, err := client.GenerateTextWithUsage(ctx, model, system, userPrompt)
+		section, callUsage, err := generateStandardSection(ctx, client, cfg.TextModel, system, basePrompt, spec, anchor)
 		if err != nil {
-			slog.Error("section call failed", "sectionID", spec.SectionID, "elapsed", time.Since(callStart).String(), "err", err)
 			return podcast.Episode{}, 0, ai.TokenUsage{}, err
 		}
-		slog.Info("section received", "sectionID", spec.SectionID, "elapsed", time.Since(callStart).String())
 		usage = usage.Add(callUsage)
-		cleanText := strings.TrimSpace(text)
-		episodeSections = append(episodeSections, podcast.EpisodeSection{
-			SectionID: spec.SectionID,
-			Text:      cleanText,
-		})
-		anchor = podcast.BuildContinuityAnchor(cleanText, spec.SectionID)
+		episodeSections = append(episodeSections, section)
+		anchor = podcast.BuildContinuityAnchor(section.Text, section.SectionID)
 	}
 
-	gameText, gameUsage, err := generateBrainGame(ctx, date, client, model, topic)
+	gameText, gameUsage, err := generateBrainGame(ctx, date, client, cfg.TextModel, topic)
 	if err != nil {
 		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}
 	usage = usage.Add(gameUsage)
-	inserted := false
-	ordered := make([]podcast.EpisodeSection, 0, len(episodeSections)+1)
-	for _, section := range episodeSections {
-		if section.SectionID == "outro" && !inserted {
-			ordered = append(ordered, podcast.EpisodeSection{
-				SectionID: "game",
-				Text:      gameText,
-			})
-			inserted = true
-		}
-		ordered = append(ordered, section)
+	gameSection := podcast.EpisodeSection{
+		SectionID: "game",
+		Text:      gameText,
 	}
-	if !inserted {
-		ordered = append(ordered, podcast.EpisodeSection{
-			SectionID: "game",
-			Text:      gameText,
-		})
+	episodeSections = append(episodeSections, gameSection)
+	anchor = podcast.BuildContinuityAnchor(gameSection.Text, gameSection.SectionID)
+
+	brainBiteText, brainBiteUsage, err := generateBrainBite(ctx, date, client, cfg, anchor)
+	if err != nil {
+		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}
+	usage = usage.Add(brainBiteUsage)
+	brainBiteSection := podcast.EpisodeSection{
+		SectionID: "brain-bite",
+		Text:      brainBiteText,
+	}
+	episodeSections = append(episodeSections, brainBiteSection)
+	anchor = podcast.BuildContinuityAnchor(brainBiteSection.Text, brainBiteSection.SectionID)
+
+	outroSpec, ok := sectionSpecs["outro"]
+	if !ok {
+		return podcast.Episode{}, 0, ai.TokenUsage{}, errors.New("missing section spec: outro")
+	}
+	outroSection, outroUsage, err := generateStandardSection(ctx, client, cfg.TextModel, system, basePrompt, outroSpec, anchor)
+	if err != nil {
+		return podcast.Episode{}, 0, ai.TokenUsage{}, err
+	}
+	usage = usage.Add(outroUsage)
+	episodeSections = append(episodeSections, outroSection)
 
 	episode := podcast.Episode{
 		Title:    topic,
-		Sections: ordered,
+		Sections: episodeSections,
 	}
 	slog.Info("validating episode fields")
 	if err := episode.Validate(); err != nil {
@@ -219,6 +227,25 @@ func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, 
 		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}
 	return episode, wordCount, usage, nil
+}
+
+func generateStandardSection(ctx context.Context, client ai.TextClient, model, system, basePrompt string, spec podcast.SectionSpec, anchor string) (podcast.EpisodeSection, ai.TokenUsage, error) {
+	if strings.TrimSpace(anchor) != "" {
+		spec.ContinuityContext = anchor
+	}
+	userPrompt := podcast.BuildSectionPrompt(basePrompt, spec)
+	slog.Info("generating episode section", "sectionID", spec.SectionID)
+	callStart := time.Now()
+	text, usage, err := client.GenerateTextWithUsage(ctx, model, system, userPrompt)
+	if err != nil {
+		slog.Error("section call failed", "sectionID", spec.SectionID, "elapsed", time.Since(callStart).String(), "err", err)
+		return podcast.EpisodeSection{}, ai.TokenUsage{}, err
+	}
+	slog.Info("section received", "sectionID", spec.SectionID, "elapsed", time.Since(callStart).String())
+	return podcast.EpisodeSection{
+		SectionID: spec.SectionID,
+		Text:      strings.TrimSpace(text),
+	}, usage, nil
 }
 
 func generateBrainGame(ctx context.Context, date time.Time, client ai.TextClient, model, topic string) (string, ai.TokenUsage, error) {
@@ -242,5 +269,17 @@ func generateBrainGame(ctx context.Context, date time.Time, client ai.TextClient
 		return "", ai.TokenUsage{}, err
 	}
 	slog.Info("brain game received", "game", game.Name, "elapsed", time.Since(callStart).String())
+	return strings.TrimSpace(text), usage, nil
+}
+
+func generateBrainBite(ctx context.Context, date time.Time, client ai.TextClient, cfg cfgpkg.Config, continuity string) (string, ai.TokenUsage, error) {
+	slog.Info("generating brain bite")
+	callStart := time.Now()
+	text, usage, err := podcast.GenerateBrainBiteWithUsage(ctx, date, cfg, client, continuity)
+	if err != nil {
+		slog.Error("brain bite call failed", "elapsed", time.Since(callStart).String(), "err", err)
+		return "", ai.TokenUsage{}, err
+	}
+	slog.Info("brain bite received", "elapsed", time.Since(callStart).String())
 	return strings.TrimSpace(text), usage, nil
 }

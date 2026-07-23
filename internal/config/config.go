@@ -12,17 +12,19 @@ import (
 
 // Config holds resolved configuration values after merging file, env, and flags.
 type Config struct {
-	Topic            string `json:"topic,omitempty"`
-	Voice            string `json:"voice,omitempty"`
-	S3Bucket         string `json:"s3Bucket,omitempty"`
-	S3Prefix         string `json:"s3Prefix,omitempty"`
-	Region           string `json:"region,omitempty"`
-	Debug            bool   `json:"debug,omitempty"`
-	Overwrite        bool   `json:"overwrite,omitempty"`
-	TextModel        string `json:"textModel,omitempty"`
-	TTSModel         string `json:"ttsModel,omitempty"`
-	TTSProvider      string `json:"ttsProvider,omitempty"`
-	TopicHistoryPath string `json:"topicHistoryPath,omitempty"`
+	Topic                string `json:"topic,omitempty"`
+	BrainBiteTopic       string `json:"brainBiteTopic,omitempty"`
+	Voice                string `json:"voice,omitempty"`
+	S3Bucket             string `json:"s3Bucket,omitempty"`
+	S3Prefix             string `json:"s3Prefix,omitempty"`
+	Region               string `json:"region,omitempty"`
+	Debug                bool   `json:"debug,omitempty"`
+	Overwrite            bool   `json:"overwrite,omitempty"`
+	TextModel            string `json:"textModel,omitempty"`
+	TTSModel             string `json:"ttsModel,omitempty"`
+	TTSProvider          string `json:"ttsProvider,omitempty"`
+	TopicHistoryPath     string `json:"topicHistoryPath,omitempty"`
+	BrainBiteHistoryPath string `json:"brainBiteHistoryPath,omitempty"`
 
 	// Not persisted to file; sourced from env only.
 	OpenAIAPIKey     string `json:"-"`
@@ -32,28 +34,31 @@ type Config struct {
 // Overrides represents optional overrides from env or flags.
 // Only non-nil pointers are applied during merge.
 type Overrides struct {
-	Topic            *string
-	Voice            *string
-	S3Bucket         *string
-	S3Prefix         *string
-	Region           *string
-	Debug            *bool
-	Overwrite        *bool
-	TextModel        *string
-	TTSModel         *string
-	TTSProvider      *string
-	TopicHistoryPath *string
+	Topic                *string
+	BrainBiteTopic       *string
+	Voice                *string
+	S3Bucket             *string
+	S3Prefix             *string
+	Region               *string
+	Debug                *bool
+	Overwrite            *bool
+	TextModel            *string
+	TTSModel             *string
+	TTSProvider          *string
+	TopicHistoryPath     *string
+	BrainBiteHistoryPath *string
 }
 
 func Default() Config {
 	return Config{
-		Voice:            "alloy",
-		S3Prefix:         "yodex",
-		Region:           "us-west-2",
-		TextModel:        "gpt-5-mini",
-		TTSModel:         "gpt-4o-mini-tts",
-		TTSProvider:      "openai",
-		TopicHistoryPath: filepath.Join("out", "topic-history.json"),
+		Voice:                "alloy",
+		S3Prefix:             "yodex",
+		Region:               "us-west-2",
+		TextModel:            "gpt-5-mini",
+		TTSModel:             "gpt-4o-mini-tts",
+		TTSProvider:          "openai",
+		TopicHistoryPath:     filepath.Join("out", "topic-history.json"),
+		BrainBiteHistoryPath: filepath.Join("out", "brain-bite-history.json"),
 	}
 }
 
@@ -116,6 +121,12 @@ func FromEnv() (Overrides, string, string) {
 	if v, ok := os.LookupEnv("YODEX_TOPIC_HISTORY_PATH"); ok {
 		ov.TopicHistoryPath = &[]string{v}[0]
 	}
+	if v, ok := os.LookupEnv("YODEX_BRAIN_BITE_TOPIC"); ok {
+		ov.BrainBiteTopic = &[]string{v}[0]
+	}
+	if v, ok := os.LookupEnv("YODEX_BRAIN_BITE_HISTORY_PATH"); ok {
+		ov.BrainBiteHistoryPath = &[]string{v}[0]
+	}
 	apiKey = os.Getenv("OPENAI_API_KEY")
 	elevenLabsKey = os.Getenv("ELEVENLABS_API_KEY")
 	return ov, apiKey, elevenLabsKey
@@ -143,6 +154,9 @@ func Merge(fileCfg Config, env Overrides, flags Overrides, openAIKey string, ele
 	apply := func(ov Overrides) {
 		if ov.Topic != nil {
 			cfg.Topic = *ov.Topic
+		}
+		if ov.BrainBiteTopic != nil {
+			cfg.BrainBiteTopic = *ov.BrainBiteTopic
 		}
 		if ov.Voice != nil {
 			cfg.Voice = *ov.Voice
@@ -173,6 +187,9 @@ func Merge(fileCfg Config, env Overrides, flags Overrides, openAIKey string, ele
 		}
 		if ov.TopicHistoryPath != nil {
 			cfg.TopicHistoryPath = *ov.TopicHistoryPath
+		}
+		if ov.BrainBiteHistoryPath != nil {
+			cfg.BrainBiteHistoryPath = *ov.BrainBiteHistoryPath
 		}
 	}
 

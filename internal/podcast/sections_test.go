@@ -69,6 +69,19 @@ func TestTopicSectionUsesDirectTransitionInstructions(t *testing.T) {
 	}
 }
 
+func TestStandardSectionIDsIncludesBrainBite(t *testing.T) {
+	ids := StandardSectionIDs()
+	expected := []string{"intro", "topic", "game", "brain-bite", "outro"}
+	if len(ids) != len(expected) {
+		t.Fatalf("expected %d section IDs, got %d", len(expected), len(ids))
+	}
+	for i := range expected {
+		if ids[i] != expected[i] {
+			t.Fatalf("section ID %d = %q, want %q", i, ids[i], expected[i])
+		}
+	}
+}
+
 func TestIntroPromptIncludesTodayHolidayGuidance(t *testing.T) {
 	date := time.Date(2026, 2, 14, 0, 0, 0, 0, time.UTC) // Valentine's Day
 	sections := StandardSectionSchema("Meteorites", date)

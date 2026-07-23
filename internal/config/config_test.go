@@ -8,10 +8,12 @@ func TestMergePrecedence(t *testing.T) {
 	file := Default()
 	file.Voice = "file-voice"
 	file.S3Bucket = "file-bucket"
+	file.BrainBiteTopic = "file-brain-bite"
 
 	env := Overrides{}
 	env.Voice = strPtr("env-voice")
 	env.S3Bucket = strPtr("env-bucket")
+	env.BrainBiteTopic = strPtr("env-brain-bite")
 
 	flags := Overrides{}
 	flags.Voice = strPtr("flag-voice")
@@ -22,6 +24,9 @@ func TestMergePrecedence(t *testing.T) {
 	}
 	if cfg.S3Bucket != "env-bucket" {
 		t.Fatalf("bucket precedence wrong: %s", cfg.S3Bucket)
+	}
+	if cfg.BrainBiteTopic != "env-brain-bite" {
+		t.Fatalf("brain bite topic precedence wrong: %s", cfg.BrainBiteTopic)
 	}
 	if cfg.OpenAIAPIKey != "sk-key" {
 		t.Fatalf("apikey not set")
@@ -45,6 +50,8 @@ func TestValidateScriptRequiresAPIKey(t *testing.T) {
 func TestFromEnv(t *testing.T) {
 	t.Setenv("YODEX_VOICE", "env-voice")
 	t.Setenv("YODEX_DEBUG", "1")
+	t.Setenv("YODEX_BRAIN_BITE_TOPIC", "Animal Homes")
+	t.Setenv("YODEX_BRAIN_BITE_HISTORY_PATH", "tmp/brain-bites.json")
 	t.Setenv("OPENAI_API_KEY", "sk-xyz")
 	t.Setenv("ELEVENLABS_API_KEY", "el-123")
 	ov, key, elevenLabsKey := FromEnv()
@@ -53,6 +60,12 @@ func TestFromEnv(t *testing.T) {
 	}
 	if ov.Debug == nil || *ov.Debug != true {
 		t.Fatalf("debug not parsed as true")
+	}
+	if ov.BrainBiteTopic == nil || *ov.BrainBiteTopic != "Animal Homes" {
+		t.Fatalf("brain bite topic not read from env")
+	}
+	if ov.BrainBiteHistoryPath == nil || *ov.BrainBiteHistoryPath != "tmp/brain-bites.json" {
+		t.Fatalf("brain bite history path not read from env")
 	}
 	if key != "sk-xyz" {
 		t.Fatalf("apikey not read from env")

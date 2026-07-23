@@ -53,7 +53,7 @@ go run ./cmd/yodex publish --date=YYYY-MM-DD --include-script
 
 Outputs land under `out/YYYY/MM/DD/` and include:
 - `episode.md` (plain text transcript)
-- `intro.md`, `topic.md`, `game.md`, `outro.md`
+- `intro.md`, `topic.md`, `game.md`, `brain-bite.md`, `outro.md`
 - `episode.mp3` plus per-section MP3s
 
 ## Configuration
@@ -62,6 +62,7 @@ Optional `config.json` at repo root:
 ```json
 {
   "topic": "The Secret Life of Honeybees",
+  "brainBiteTopic": "A Tour of Our Solar System",
   "voice": "alloy",
   "s3Bucket": "my-yodex-bucket",
   "s3Prefix": "yodex",
@@ -71,7 +72,8 @@ Optional `config.json` at repo root:
   "textModel": "gpt-5-mini",
   "ttsModel": "gpt-4o-mini-tts",
   "ttsProvider": "openai",
-  "topicHistoryPath": "out/topic-history.json"
+  "topicHistoryPath": "out/topic-history.json",
+  "brainBiteHistoryPath": "out/brain-bite-history.json"
 }
 ```
 
@@ -83,10 +85,17 @@ Env vars override config (flags override both):
 - `YODEX_DEBUG`, `YODEX_OVERWRITE`
 - `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_S3_PREFIX`
 - `YODEX_TOPIC_HISTORY_PATH`
+- `YODEX_BRAIN_BITE_TOPIC`, `YODEX_BRAIN_BITE_HISTORY_PATH`
 
 Topic history is stored as `topic-history.json` in S3 when `AWS_S3_BUCKET` is
 set (under `AWS_S3_PREFIX/` if provided). When S3 is not configured, history is
 stored locally at `topicHistoryPath` and mapped as date -> topic.
+
+Brain Bite history is stored as `brain-bite-history.json` in S3 when
+`AWS_S3_BUCKET` is set (under `AWS_S3_PREFIX/` if provided). When S3 is not
+configured, history is stored locally at `brainBiteHistoryPath`. Each week keeps
+one broad Brain Bite topic plus compact daily coverage summaries so new lessons
+can avoid repeating earlier topics or same-week coverage.
 
 ## GitHub Actions configuration
 
@@ -105,8 +114,8 @@ Repo secrets:
 - `AWS_S3_BUCKET`
 - `AWS_S3_PREFIX`
 
-Game audio:
-- Intro/outro/game music lives in S3 under `music/intro.mp3`, `music/game_intro.mp3`, `music/outro.mp3`.
+Music:
+- Intro, topic bridge, game, Brain Bite, and outro music live in S3 under `music/intro.mp3`, `music/intro_bridge.mp3`, `music/game_intro.mp3`, `music/brain_bite_intro.mp3`, and `music/outro.mp3`.
 - Long pauses use `assets/audio/pause6s.mp3` inserted during audio generation.
 
 ## Tests
