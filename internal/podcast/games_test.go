@@ -113,7 +113,7 @@ func TestBuildGamePrompt(t *testing.T) {
 	if system == "" || user == "" {
 		t.Fatalf("expected prompts to be set")
 	}
-	if !containsAll(user, []string{"Weekday: Monday", "Topic: Space", "Game: mystery", "Start with one short sentence that connects", "Continuity anchor from the topic:\nTopic ending", "Game rules:\nRule"}) {
+	if !containsAll(user, []string{"Weekday: Monday", "Topic: Space", "Game: mystery", "Use the topic transition cue only as background", "Do not quote, repeat, or reteach", "Topic transition cue:\nTopic ending", "Game rules:\nRule"}) {
 		t.Fatalf("missing rules in prompt: %q", user)
 	}
 	if !strings.Contains(system, "Do not stack multiple pauses for the same question.") {

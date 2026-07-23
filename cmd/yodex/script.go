@@ -176,7 +176,8 @@ func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, 
 		anchor = podcast.BuildContinuityAnchor(section.Text, section.SectionID)
 	}
 
-	gameText, gameUsage, err := generateBrainGame(ctx, date, client, cfg.TextModel, topic, anchor)
+	gameContinuity := podcast.BuildTransitionCue(episodeSections[len(episodeSections)-1].Text, "topic")
+	gameText, gameUsage, err := generateBrainGame(ctx, date, client, cfg.TextModel, topic, gameContinuity)
 	if err != nil {
 		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}

@@ -76,6 +76,13 @@ func TestTopicPromptLeadsIntoBrainGame(t *testing.T) {
 	}
 }
 
+func TestBuildTransitionCueUsesLastSentence(t *testing.T) {
+	cue := BuildTransitionCue("First thought. Let's play a game!", "topic")
+	if !strings.Contains(cue, "Let's play a game!") || strings.Contains(cue, "First thought") {
+		t.Fatalf("unexpected transition cue: %q", cue)
+	}
+}
+
 func TestStandardSectionIDsIncludesBrainBite(t *testing.T) {
 	ids := StandardSectionIDs()
 	expected := []string{"intro", "topic", "game", "brain-bite", "wild-fact", "outro"}

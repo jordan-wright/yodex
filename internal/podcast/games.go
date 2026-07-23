@@ -134,7 +134,7 @@ func BuildGamePrompt(topic string, date time.Time, rules GameRules, continuity s
 	}
 	weekday := date.UTC().Weekday().String()
 	user := fmt.Sprintf(
-		"Weekday: %s\nTopic: %s\nGame: %s\n\nStart with one short sentence that connects a concrete idea from the previous topic to this game. Then naturally signal that it is brain-game time and introduce %s. Do not re-greet the audience or use a fixed weekday catchphrase. Give a short, friendly summary of how the game works that makes expectations clear.\n\nGame rules:\n%s",
+		"Weekday: %s\nTopic: %s\nGame: %s\n\nUse the topic transition cue only as background. Start with one original bridge sentence into this game. Do not quote, repeat, or reteach the cue or the preceding topic. Then naturally signal that it is brain-game time and introduce %s. Do not re-greet the audience or use a fixed weekday catchphrase. Give a short, friendly summary of how the game works that makes expectations clear.\n\nGame rules:\n%s",
 		weekday,
 		topic,
 		rules.Name,
@@ -142,7 +142,7 @@ func BuildGamePrompt(topic string, date time.Time, rules GameRules, continuity s
 		rules.Rules,
 	)
 	if strings.TrimSpace(continuity) != "" {
-		user += "\n\nContinuity anchor from the topic:\n" + strings.TrimSpace(continuity)
+		user += "\n\nTopic transition cue:\n" + strings.TrimSpace(continuity)
 	}
 	return gameSystemPrompt, user, nil
 }

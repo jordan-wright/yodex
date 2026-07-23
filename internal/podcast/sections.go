@@ -153,6 +153,15 @@ func BuildContinuityAnchor(text, sectionID string) string {
 	return last
 }
 
+// BuildTransitionCue returns one sentence for a short transition into the next section.
+func BuildTransitionCue(text, sectionID string) string {
+	sentences := splitSentences(text)
+	if len(sentences) == 0 {
+		return fmt.Sprintf("The previous section (%s) just ended; make one original transition into the next section.", sectionID)
+	}
+	return fmt.Sprintf("The previous section (%s) ended with: %s", sectionID, strings.TrimSpace(sentences[len(sentences)-1]))
+}
+
 func splitSentences(text string) []string {
 	normalized := strings.ReplaceAll(strings.TrimSpace(text), "\n", " ")
 	var sentences []string
