@@ -152,6 +152,7 @@ func buildBrainBitePrompt(date time.Time, week BrainBiteWeek, coverage []BrainBi
 	}
 
 	b.WriteString("\nWrite today's Brain Bite as a short self-contained lesson after the brain game. ")
+	b.WriteString("Start with one short bridge that picks up a concrete idea from the game continuity anchor, then move into the Brain Bite. Do not announce the segment with phrases such as \"Quick Brain Bite\" or \"Brain Bite —\". ")
 	if date.Weekday() == time.Monday || len(coverage) == 0 {
 		b.WriteString("This is the first Brain Bite for the week. Start with a brief, recognizable Brain Bite cue, but vary its exact wording from week to week. Then briefly name the weekly theme, teach today's subtopic, and give one enticing preview of a real later subtopic. ")
 	} else if date.Weekday() == time.Sunday {

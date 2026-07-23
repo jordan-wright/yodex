@@ -124,7 +124,7 @@ const gameSystemPrompt = "You are a friendly, curious podcast host creating an a
 	"- Do not say goodbye or reference the show ending; the outro handles that.\n\n" +
 	"Now generate the game round using the provided rules."
 
-func BuildGamePrompt(topic string, date time.Time, rules GameRules) (string, string, error) {
+func BuildGamePrompt(topic string, date time.Time, rules GameRules, continuity string) (string, string, error) {
 	topic = strings.TrimSpace(topic)
 	if topic == "" {
 		return "", "", errors.New("topic is required")
@@ -134,13 +134,15 @@ func BuildGamePrompt(topic string, date time.Time, rules GameRules) (string, str
 	}
 	weekday := date.UTC().Weekday().String()
 	user := fmt.Sprintf(
-		"Weekday: %s\nTopic: %s\nGame: %s\n\nStart the game by saying: It's %s so you know what that means! It's time to play %s.\nThen give a short, friendly summary of how the game works that makes expectations clear.\n\nGame rules:\n%s",
+		"Weekday: %s\nTopic: %s\nGame: %s\n\nStart with one short sentence that connects a concrete idea from the previous topic to this game. Then naturally signal that it is brain-game time and introduce %s. Do not re-greet the audience or use a fixed weekday catchphrase. Give a short, friendly summary of how the game works that makes expectations clear.\n\nGame rules:\n%s",
 		weekday,
 		topic,
 		rules.Name,
-		weekday,
 		rules.Name,
 		rules.Rules,
 	)
+	if strings.TrimSpace(continuity) != "" {
+		user += "\n\nContinuity anchor from the topic:\n" + strings.TrimSpace(continuity)
+	}
 	return gameSystemPrompt, user, nil
 }

@@ -91,6 +91,9 @@ func TestGenerateBrainBiteCreatesWeekWithPreviousTopics(t *testing.T) {
 	if !strings.Contains(gen.prompts[2], "recognizable Brain Bite cue") || !strings.Contains(gen.prompts[2], "vary its exact wording") {
 		t.Fatalf("expected flexible recurring cue guidance, got %q", gen.prompts[2])
 	}
+	if !strings.Contains(gen.prompts[2], "picks up a concrete idea from the game continuity anchor") || !strings.Contains(gen.prompts[2], "Do not announce the segment") {
+		t.Fatalf("expected game-to-Brain-Bite bridge guidance, got %q", gen.prompts[2])
+	}
 	if !strings.Contains(gen.prompts[2], "Tomorrow's planned subtopic: Burrows") {
 		t.Fatalf("expected planned tomorrow subtopic, got %q", gen.prompts[2])
 	}

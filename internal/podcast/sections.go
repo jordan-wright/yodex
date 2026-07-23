@@ -62,7 +62,7 @@ func StandardSectionSchema(topic string, date time.Time) []SectionSpec {
 }
 
 func buildTopicPrompt(topic string) string {
-	return fmt.Sprintf("Explain the core idea about %q in a clear, curious voice, then add a deeper dive. Use relatable analogies and include one surprising fact. Keep it 4-6 short paragraphs total.", topic)
+	return fmt.Sprintf("Explain the core idea about %q in a clear, curious voice, then add a deeper dive. Use relatable analogies and include one surprising fact. Keep it 4-6 short paragraphs total. End with one short sentence that naturally leads into a playful brain game using the topic. Do not promise a different upcoming lesson or research story.", topic)
 }
 
 func buildIntroPrompt(topic string, date time.Time) string {
@@ -95,7 +95,8 @@ func buildOutroPrompt(topic string, date time.Time) string {
 	date = date.UTC()
 	dateLabel := date.Format("Monday, January 2")
 	prompt := fmt.Sprintf(
-		"Wrap up the episode about %q with a friendly recap and a thoughtful question for listeners. Use first-person voice as Jessica. Instead of a mechanical date callout, weave it into a warm wish like: \"I hope everyone has an amazing %s.\" Keep it 3-5 sentences.",
+		"Wrap up the episode about %q with a friendly recap and a thoughtful question for listeners. Use first-person voice as Jessica, but do not introduce Jessica or the podcast again. The immediately previous section was an unrelated Wild Fact: do not mention it, compare it to %q, or use it in the recap. Instead of a mechanical date callout, weave it into a warm wish like: \"I hope everyone has an amazing %s.\" Keep it 3-5 sentences.",
+		topic,
 		topic,
 		dateLabel,
 	)

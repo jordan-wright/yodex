@@ -106,14 +106,14 @@ func TestChooseGameTuesdayBuildItBrainstorm(t *testing.T) {
 
 func TestBuildGamePrompt(t *testing.T) {
 	date := time.Date(2026, 1, 19, 0, 0, 0, 0, time.UTC) // Monday
-	system, user, err := BuildGamePrompt("Space", date, GameRules{Name: "mystery", Rules: "Rule"})
+	system, user, err := BuildGamePrompt("Space", date, GameRules{Name: "mystery", Rules: "Rule"}, "Topic ending")
 	if err != nil {
 		t.Fatalf("BuildGamePrompt: %v", err)
 	}
 	if system == "" || user == "" {
 		t.Fatalf("expected prompts to be set")
 	}
-	if !containsAll(user, []string{"Weekday: Monday", "Topic: Space", "Game: mystery", "Then give a short, friendly summary", "Game rules:\nRule"}) {
+	if !containsAll(user, []string{"Weekday: Monday", "Topic: Space", "Game: mystery", "Start with one short sentence that connects", "Continuity anchor from the topic:\nTopic ending", "Game rules:\nRule"}) {
 		t.Fatalf("missing rules in prompt: %q", user)
 	}
 	if !strings.Contains(system, "Do not stack multiple pauses for the same question.") {

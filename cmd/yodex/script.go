@@ -176,7 +176,7 @@ func generateEpisode(ctx context.Context, date time.Time, client ai.TextClient, 
 		anchor = podcast.BuildContinuityAnchor(section.Text, section.SectionID)
 	}
 
-	gameText, gameUsage, err := generateBrainGame(ctx, date, client, cfg.TextModel, topic)
+	gameText, gameUsage, err := generateBrainGame(ctx, date, client, cfg.TextModel, topic, anchor)
 	if err != nil {
 		return podcast.Episode{}, 0, ai.TokenUsage{}, err
 	}
@@ -256,7 +256,7 @@ func generateStandardSection(ctx context.Context, client ai.TextClient, model, s
 	}, usage, nil
 }
 
-func generateBrainGame(ctx context.Context, date time.Time, client ai.TextClient, model, topic string) (string, ai.TokenUsage, error) {
+func generateBrainGame(ctx context.Context, date time.Time, client ai.TextClient, model, topic, continuity string) (string, ai.TokenUsage, error) {
 	games, err := podcast.LoadGameRules()
 	if err != nil {
 		return "", ai.TokenUsage{}, err
@@ -265,7 +265,7 @@ func generateBrainGame(ctx context.Context, date time.Time, client ai.TextClient
 	if err != nil {
 		return "", ai.TokenUsage{}, err
 	}
-	system, user, err := podcast.BuildGamePrompt(topic, date, game)
+	system, user, err := podcast.BuildGamePrompt(topic, date, game, continuity)
 	if err != nil {
 		return "", ai.TokenUsage{}, err
 	}

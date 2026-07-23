@@ -69,6 +69,13 @@ func TestTopicSectionUsesDirectTransitionInstructions(t *testing.T) {
 	}
 }
 
+func TestTopicPromptLeadsIntoBrainGame(t *testing.T) {
+	sections := StandardSectionSchema("Volcanoes", time.Date(2026, 1, 19, 0, 0, 0, 0, time.UTC))
+	if !strings.Contains(sections[1].Prompt, "naturally leads into a playful brain game") {
+		t.Fatalf("expected topic-to-game guidance, got %q", sections[1].Prompt)
+	}
+}
+
 func TestStandardSectionIDsIncludesBrainBite(t *testing.T) {
 	ids := StandardSectionIDs()
 	expected := []string{"intro", "topic", "game", "brain-bite", "wild-fact", "outro"}
@@ -106,6 +113,14 @@ func TestOutroPromptIncludesTomorrowHolidayGuidance(t *testing.T) {
 	}
 	if !strings.Contains(prompt, "If you're celebrating, I hope you have a wonderful holiday tomorrow.") {
 		t.Fatalf("expected tomorrow holiday wish in outro prompt, got %q", prompt)
+	}
+}
+
+func TestOutroPromptExcludesWildFact(t *testing.T) {
+	sections := StandardSectionSchema("Meteorites", time.Date(2026, 2, 10, 0, 0, 0, 0, time.UTC))
+	prompt := sections[2].Prompt
+	if !strings.Contains(prompt, "previous section was an unrelated Wild Fact") || !strings.Contains(prompt, "do not mention it") {
+		t.Fatalf("expected Wild Fact exclusion guidance, got %q", prompt)
 	}
 }
 
