@@ -66,7 +66,7 @@ func TestGenerateBrainBiteCreatesWeekWithPreviousTopics(t *testing.T) {
 			"Today, our Brain Bite begins with nests. A nest can protect eggs and babies.",
 		},
 	}
-	text, _, err := GenerateBrainBiteWithUsage(context.Background(), time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC), cfg, gen, "Game anchor")
+	text, _, err := GenerateBrainBiteWithUsage(context.Background(), time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC), cfg, gen)
 	if err != nil {
 		t.Fatalf("GenerateBrainBiteWithUsage: %v", err)
 	}
@@ -88,10 +88,10 @@ func TestGenerateBrainBiteCreatesWeekWithPreviousTopics(t *testing.T) {
 	if !strings.Contains(gen.prompts[2], "Do not greet the audience again") {
 		t.Fatalf("expected anti-reintro guidance, got %q", gen.prompts[2])
 	}
-	if !strings.Contains(gen.prompts[2], "Start exactly with \"Brain Bite:\"") || !strings.Contains(gen.prompts[2], "neutral bridge") {
+	if !strings.Contains(gen.prompts[2], "gentle transition sentence") || !strings.Contains(gen.prompts[2], "it's time for the daily Brain Bite") {
 		t.Fatalf("expected named Brain Bite bridge guidance, got %q", gen.prompts[2])
 	}
-	if !strings.Contains(gen.prompts[2], "Do not assume the listener gave a particular answer") {
+	if !strings.Contains(gen.prompts[2], "do not assume the listener gave a particular answer") || !strings.Contains(gen.prompts[2], "repeat game details") {
 		t.Fatalf("expected neutral listener-response guidance, got %q", gen.prompts[2])
 	}
 	if !strings.Contains(gen.prompts[2], "Tomorrow's planned subtopic: Burrows") {
@@ -163,7 +163,7 @@ func TestGenerateBrainBiteUsesExistingWeekCoverage(t *testing.T) {
 	gen := &fakeBrainBiteGen{
 		responses: []string{"Today, let us look at burrows. Burrows are tunnels that help animals hide and stay cool."},
 	}
-	if _, _, err := GenerateBrainBiteWithUsage(context.Background(), time.Date(2026, 4, 21, 0, 0, 0, 0, time.UTC), cfg, gen, "Game anchor"); err != nil {
+	if _, _, err := GenerateBrainBiteWithUsage(context.Background(), time.Date(2026, 4, 21, 0, 0, 0, 0, time.UTC), cfg, gen); err != nil {
 		t.Fatalf("GenerateBrainBiteWithUsage: %v", err)
 	}
 	if gen.calls != 1 {

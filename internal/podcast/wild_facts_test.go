@@ -33,7 +33,7 @@ func TestGenerateWildFactAvoidsHistoryAndRecordsFact(t *testing.T) {
 
 	gen := &fakeBrainBiteGen{responses: []string{"[playful] Octopuses have three hearts. Two pump blood to the gills, while one sends it around the body."}}
 	date := time.Date(2026, 4, 20, 0, 0, 0, 0, time.UTC)
-	text, _, err := GenerateWildFactWithUsage(context.Background(), date, cfg, gen, "Volcanoes", "Brain Bite anchor")
+	text, _, err := GenerateWildFactWithUsage(context.Background(), date, cfg, gen, "Volcanoes")
 	if err != nil {
 		t.Fatalf("GenerateWildFactWithUsage: %v", err)
 	}
@@ -49,6 +49,9 @@ func TestGenerateWildFactAvoidsHistoryAndRecordsFact(t *testing.T) {
 	}
 	if !strings.Contains(prompt, "Today's main podcast topic: Volcanoes") {
 		t.Fatalf("expected daily topic exclusion, got %q", prompt)
+	}
+	if !strings.Contains(prompt, "Start exactly with \"Daily Fun Fact:\"") {
+		t.Fatalf("expected Daily Fun Fact transition guidance, got %q", prompt)
 	}
 	if !strings.Contains(prompt, "A day on Venus is longer than its year.") {
 		t.Fatalf("expected prior fact in prompt, got %q", prompt)

@@ -16,7 +16,7 @@ const brainBitePlanSystemPrompt = "You plan a week of safe, accurate, connected 
 const brainBiteSystemPrompt = "You write safe, accurate, self-contained kid-friendly mini-lessons for elementary-age children."
 
 // GenerateBrainBiteWithUsage returns today's Brain Bite and updates weekly Brain Bite history.
-func GenerateBrainBiteWithUsage(ctx context.Context, date time.Time, cfg config.Config, gen TextGenerator, continuity string) (string, ai.TokenUsage, error) {
+func GenerateBrainBiteWithUsage(ctx context.Context, date time.Time, cfg config.Config, gen TextGenerator) (string, ai.TokenUsage, error) {
 	if gen == nil {
 		return "", ai.TokenUsage{}, errors.New("ai client is required to generate a brain bite")
 	}
@@ -35,7 +35,7 @@ func GenerateBrainBiteWithUsage(ctx context.Context, date time.Time, cfg config.
 		return "", ai.TokenUsage{}, err
 	}
 
-	prompt := buildBrainBitePrompt(date, week, week.Coverage, continuity)
+	prompt := buildBrainBitePrompt(date, week, week.Coverage)
 	text, callUsage, err := generateTextMaybeWithUsage(ctx, gen, cfg.TextModel, brainBiteSystemPrompt, prompt)
 	if err != nil {
 		return "", ai.TokenUsage{}, err
@@ -126,7 +126,7 @@ func buildBrainBiteTopicPrompt(previous []string) string {
 	return strings.TrimSpace(b.String())
 }
 
-func buildBrainBitePrompt(date time.Time, week BrainBiteWeek, coverage []BrainBiteCoverage, continuity string) string {
+func buildBrainBitePrompt(date time.Time, week BrainBiteWeek, coverage []BrainBiteCoverage) string {
 	date = date.UTC()
 	weekdayIndex := weekdayPlanIndex(date.Weekday())
 	todaySubtopic := indexedSubtopic(week.Subtopics, weekdayIndex)
@@ -145,20 +145,14 @@ func buildBrainBitePrompt(date time.Time, week BrainBiteWeek, coverage []BrainBi
 	if tomorrowSubtopic != "" {
 		fmt.Fprintf(&b, "Tomorrow's planned subtopic: %s\n", tomorrowSubtopic)
 	}
-	if strings.TrimSpace(continuity) != "" {
-		b.WriteString("\nContinuity anchor from the brain game:\n")
-		b.WriteString(strings.TrimSpace(continuity))
-		b.WriteString("\n")
-	}
-
 	b.WriteString("\nWrite today's Brain Bite as a short self-contained lesson after the brain game. ")
-	b.WriteString("Start exactly with \"Brain Bite:\" followed by one short, neutral bridge that picks up a concrete idea from the game continuity anchor. Do not assume the listener gave a particular answer or praise a specific imagined response. Use the name \"Brain Bite\" only once, in that opening label. ")
+	b.WriteString("Start with one warm, gentle transition sentence that acknowledges the game has just ended and smoothly changes gears. Then naturally say, \"it's time for the daily Brain Bite,\" before beginning the lesson. Keep this transition general: do not assume the listener gave a particular answer, repeat game details, or force a connection between the game and the weekly theme. Do not use a heading or label. Use the name \"Brain Bite\" only once, in that introduction. ")
 	if date.Weekday() == time.Monday || len(coverage) == 0 {
-		b.WriteString("This is the first Brain Bite for the week. After the label and bridge, briefly name the weekly theme, teach today's subtopic, and give one enticing preview of a real later subtopic. ")
+		b.WriteString("This is the first Brain Bite for the week. After the transition and introduction, briefly name the weekly theme, teach today's subtopic, and give one enticing preview of a real later subtopic. ")
 	} else if date.Weekday() == time.Sunday {
-		b.WriteString("This is the final Brain Bite for the week. After the label and bridge, briefly name the weekly theme and today's planned subtopic, teach the lesson, then close the journey with a one-sentence celebration of what listeners explored this week. ")
+		b.WriteString("This is the final Brain Bite for the week. After the transition and introduction, briefly name the weekly theme and today's planned subtopic, teach the lesson, then close the journey with a one-sentence celebration of what listeners explored this week. ")
 	} else {
-		b.WriteString("After the label and bridge, use one short sentence to name the weekly theme and connect yesterday's planned subtopic to today's. Teach today's planned subtopic and make the lesson understandable for a listener who missed earlier episodes. End with one short, playful preview of tomorrow's planned subtopic. ")
+		b.WriteString("After the transition and introduction, use one short sentence to name the weekly theme and connect yesterday's planned subtopic to today's. Teach today's planned subtopic and make the lesson understandable for a listener who missed earlier episodes. End with one short, playful preview of tomorrow's planned subtopic. ")
 	}
 	b.WriteString("Do not add a heading. Do not greet the audience again. Do not reintroduce Jessica or the podcast. Continue naturally from the game as the same host in the same conversation. ")
 	b.WriteString("Use Jessica's warm first-person host voice. Keep it 3-5 short paragraphs. ")
