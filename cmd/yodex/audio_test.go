@@ -100,7 +100,7 @@ func TestAudioWritesMP3(t *testing.T) {
 	if err != nil {
 		t.Fatalf("missing episode.mp3: %v", err)
 	}
-	expectedSize := int64(len("mp3bytes")*8 + len("pausebytes") + len("shortbytes"))
+	expectedSize := int64(len("mp3bytes")*8 + len("pausebytes") + len("shortbytes")*2)
 	if info.Size() != expectedSize {
 		t.Fatalf("unexpected episode.mp3 size: %d", info.Size())
 	}

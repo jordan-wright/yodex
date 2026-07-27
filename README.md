@@ -122,7 +122,7 @@ Repo secrets:
 
 Music:
 - Intro, topic bridge, game, Brain Bite, and outro music live in S3 under `music/intro.mp3`, `music/intro_bridge.mp3`, `music/game_intro.mp3`, `music/brain_bite_intro.mp3`, and `music/outro.mp3`.
-- Long pauses use `assets/audio/pause6s.mp3` inserted during audio generation.
+- Short and long pauses use `assets/audio/pause3s.mp3` and `assets/audio/pause6s.mp3` during audio generation. The completed episode also includes a three-second pause after the Daily Fun Fact.
 
 ## Tests
 

@@ -53,6 +53,9 @@ func TestGenerateWildFactAvoidsHistoryAndRecordsFact(t *testing.T) {
 	if !strings.Contains(prompt, "Start exactly with \"Daily Fun Fact:\"") {
 		t.Fatalf("expected Daily Fun Fact transition guidance, got %q", prompt)
 	}
+	if !strings.Contains(prompt, "Share the fact directly") || !strings.Contains(prompt, "do not ask the listener questions") {
+		t.Fatalf("expected direct fact guidance, got %q", prompt)
+	}
 	if !strings.Contains(prompt, "A day on Venus is longer than its year.") {
 		t.Fatalf("expected prior fact in prompt, got %q", prompt)
 	}

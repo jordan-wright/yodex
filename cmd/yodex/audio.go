@@ -110,6 +110,9 @@ func cmdAudio(args []string) error {
 			if err != nil {
 				return err
 			}
+			if sectionID == "wild-fact" {
+				text = []byte(strings.TrimSpace(string(text)) + " " + shortPauseTag)
+			}
 			outPath := builder.EpisodeSectionMP3(date, sectionID)
 			if err := synthesizeWithPauses(ctx, client, cfg, string(text), outPath); err != nil {
 				return err
