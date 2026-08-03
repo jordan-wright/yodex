@@ -14,6 +14,10 @@ on:
         required: false
         type: boolean
         default: false
+      topic:
+        description: "Optional one-time podcast topic"
+        required: false
+        type: string
 
 concurrency:
   group: yodex-daily
@@ -62,8 +66,13 @@ jobs:
           AWS_REGION: ${{ vars.AWS_REGION }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           YODEX_TEXT_MODEL: ${{ vars.YODEX_TEXT_MODEL }}
+          YODEX_TOPIC: ${{ inputs.topic }}
         run: |
-          go run ./cmd/yodex script --date=${{ steps.date.outputs.value }}
+          SCRIPT_ARGS=(script "--date=${{ steps.date.outputs.value }}")
+          if [ -n "${YODEX_TOPIC}" ]; then
+            SCRIPT_ARGS+=(--topic "${YODEX_TOPIC}")
+          fi
+          go run ./cmd/yodex "${SCRIPT_ARGS[@]}"
 
       - name: Upload script artifacts
         if: ${{ inputs.debug }}
